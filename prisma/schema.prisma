@@ -14,25 +14,52 @@ enum Role {
   PROFESSOR
 }
 
+/*
+  StudentPackageStatus - Explicado
+
+  ACTIVE -> válido e com créditos
+  EXPIRED -> Passou da validade
+  DEPLETED -> créditos esgotados
+  CANCELLED -> cancelado manulmente
+*/
+
 enum StudentPackageStatus {
-  ACTIVE // válido e com créditos
-  EXPIRED // Passou da validade
-  DEPLETED // créditos esgotados
-  CANCELLED // cancelado manulmente
+  ACTIVE 
+  EXPIRED 
+  DEPLETED 
+  CANCELLED 
 } 
 
+/*
+  AppointementStatus - Explicado
+
+  BOOKED -> marcado sem confirmação
+  CONFIRMED -> confirmado presença
+  RESCHEDULED -> remarcado
+  CANCELLED -> Cancelado
+*/
+
 enum AppointmentStatus {
-  BOOKED //marcado sem confirmação
-  CONFIRMED //confirmado presença
-  RESCHEDULED // remarcado
-  CANCELLED //Cancelado
+  BOOKED 
+  CONFIRMED 
+  RESCHEDULED 
+  CANCELLED 
 }
 
-enum AttendanceStatus{
-  PENDING // aula ainda não aconteceu / presença não registrada
-  PRESENT // compareceu 
-  ABSENT // faltou (registrado manulmente)
-  NO_SHOW // faltou sem avisar (automação futura)
+/*
+  AttendanceStatus - Explicado
+
+  PENDING -> aula ainda não aconteceu / presença não registrada
+  PRESENT -> compareceu 
+  ABSENT -> faltou (registrado manulmente)
+  NO_SHOW -> faltou sem avisar (automação futura)
+*/ 
+
+enum AttendanceStatus {
+  PENDING 
+  PRESENT 
+  ABSENT 
+  NO_SHOW 
 }
 
 enum ClassSessionStatus {
@@ -54,6 +81,7 @@ model Academy {
   appointments Appointment[]
   plans Plan[]
   studentPackages StudentPackage[]
+  jobs Job[]
 }
 
 model User {
@@ -232,4 +260,52 @@ model Appointment {
   @@index([academyId, studentId])
 }
 
+/*
+  JobType - Tipo de trabalho à ser executado
 
+  PRESENCE_CONFIRMATION -> disparo para confirmação de presença 12h antes da aula
+  WELCOME -> Resposta para aluno novo/interessado entrou em contato
+  PLAN_EXPIRY -> Plano atual do aluno está proximo do fim
+*/
+
+enum JobType {
+  PRESENCE_CONFIRMATION
+  WELCOME
+  PLAN_EXPIRY
+}
+
+/*
+  JobStatus - Estado atual do trabalho
+
+  PENDING -> Aguardando hora para ser executado
+  PROCESSING -> Worker pegou, evita duplicidade de evento
+  SENT -> Enviado com sucesso
+  FAILED -> Falha no envio, debugar erro (lastError)
+*/
+
+enum JobStatus { 
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
+model Job{
+  id String @id @default(uuid())
+  academyId String 
+  type JobType
+  status JobStatus @default(PENDING)
+  relatedId String? 
+  payload Json 
+  scheduledFor DateTime @default(now())
+  attempts Int @default(0)
+  maxAttempts Int @default(3)
+  lastError String?
+  sentAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Restrict)
+
+  @@index([status, scheduledFor]) // Para o worker buscar toda hora
+}
