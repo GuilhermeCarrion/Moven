@@ -25,6 +25,10 @@ export class StudentRepository {
     });
   }
 
+  async findByPhone(phone: string) {
+    return await prisma.student.findFirst({ where: { phone } });
+  }
+
   async update(id: string, data: Prisma.StudentUpdateInput) {
     return await prisma.student.update({
       where: { id },
