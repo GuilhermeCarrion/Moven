@@ -18,6 +18,7 @@ export class UserRepository {
       where: { id },
       select: {
         id: true,
+        academyId: true,
         email: true,
         name: true,
         active: true,
