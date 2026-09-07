@@ -4,12 +4,14 @@ import { ClassSessionRepository } from "../repositories/ClassSessionRepository";
 import { AppError } from "@/lib/errors";
 import { StudentRepository } from "../repositories/StudentRepository";
 import { StudentPackageRepository } from "../repositories/StudentPackageRepository";
-import { AttendanceStatus } from "@prisma/client";
+import { AttendanceStatus, JobType } from "@prisma/client";
+import { JobService } from "./JobService";
 
 const appointmentRepository = new AppointmentRepository();
 const sessionRepository = new ClassSessionRepository();
 const studentRepository = new StudentRepository();
 const packageRepository = new StudentPackageRepository();
+const jobService = new JobService();
 
 const CANCEL_WINDOW_HOURS = 2; // Cancelar com <2hrs não estorna
 const ATTENDANCE_WINDOW_MIN = 30; // Presença só na janela aproximadamente 30min
@@ -66,12 +68,33 @@ export class AppointmentService {
         409,
       );
 
-    return await appointmentRepository.createWithDebit({
+    const appointment = await appointmentRepository.createWithDebit({
       academyId,
       studentId: data.studentId,
       classSessionId: data.classSessionId,
       studentPackageId: pkg.id,
     });
+
+    try {
+      const twelveHoursBefore = new Date(
+        session.startAt.getTime() - 12 * 60 * 60 * 1000,
+      );
+      await jobService.enqueue({
+        academyId,
+        type: JobType.PRESENCE_CONFIRMATION,
+        relatedId: appointment.id,
+        payload: {
+          to: "55" + student.phone,
+          studentName: student.name,
+          time: session.startAt.toLocaleString("pt-BR"),
+        },
+        scheduledFor: twelveHoursBefore,
+      });
+    } catch (e) {
+      console.error("Falha ao enfileirar confirmação:", e);
+    }
+
+    return appointment;
   }
 
   async confirm(id: string, academyId: string) {

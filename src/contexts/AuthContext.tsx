@@ -6,7 +6,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import { apiPrivate, apiPublic, TOKEN_KEY } from "@/lib/axios";
+import { apiPrivate, apiPublic } from "@/lib/axios";
 
 /**
  * creatContext: Conteiner de contexto.
@@ -26,6 +26,7 @@ interface User {
   id: string;
   email: string;
   name?: string;
+  role?: string;
   academy?: { name: string };
 }
 
@@ -35,16 +36,12 @@ interface AuthContextData {
   isAuthenticated: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   /**
    * user: guarda os dados do usuário logado ou null.
    * isAuthenticated: flag booleana que indica se há sessão ativa.
@@ -55,55 +52,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Executa uma unica vez quando o Provider é montado (Array de dependencias vazio)
+  // Na montagem, tenta restaurar a sessão só com o cookie (o /auth/me usa o access).
+  // Se o access expirou mas o refresh vive, o interceptor renova e o /auth/me passa.
   useEffect(() => {
-    const loadStoredToken = async () => {
+    const restoreSession = async () => {
       try {
-        const token = localStorage.getItem(TOKEN_KEY);
-        if (token) {
-          apiPrivate.defaults.headers.common["Authorization"] =
-            `Bearer ${token}`;
-          const response = await apiPrivate.get<User>("/auth/me");
-          setUser(response.data);
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        console.error("Error loading token:", error);
-        localStorage.removeItem(TOKEN_KEY);
-        delete apiPrivate.defaults.headers.common["Authorization"];
+        const { data } = await apiPrivate.get<User>("/auth/me");
+        setUser(data);
+        setIsAuthenticated(true);
+      } catch {
+        setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
     };
-    loadStoredToken();
+    restoreSession();
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    try {
-      const response = await apiPublic.post<{ token: string; user: User }>(
-        "/auth/login",
-        {
-          email,
-          password,
-        },
-      );
-      const { token, user } = response.data;
-
-      localStorage.setItem(TOKEN_KEY, token);
-      apiPublic.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      setUser(user);
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error("Sign in error:", error);
-      throw error;
-    }
+    // O servidor grava os cookies; aqui só guardamos o user retornado
+    const { data } = await apiPublic.post<{ user: User }>("/auth/login", {
+      email,
+      password,
+    });
+    setUser(data.user);
+    setIsAuthenticated(true);
   }, []);
 
-  const signOut = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    delete apiPrivate.defaults.headers.common["Authorization"];
-    setUser(null);
-    setIsAuthenticated(false);
+  const signOut = useCallback(async () => {
+    try {
+      await apiPublic.post("/auth/logout"); //apaga a sessão no banco + limpa cookies
+    } catch {
+      // best-effort: mesmo que falhe, limpamos o estado local
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
   }, []);
 
   // Disponibilizando os valores e funções para todos os componentes filhos. Value é o objeto que qualquer consumidor

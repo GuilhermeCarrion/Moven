@@ -1,8 +1,11 @@
 import { StudentSchema, StudentUpdateSchema } from "@/schemas/students.schema";
 import { StudentRepository } from "../repositories/StudentRepository";
 import { AppError } from "@/lib/errors";
+import { JobService } from "./JobService";
+import { JobType } from "@prisma/client";
 
 const repository = new StudentRepository();
+const jobService = new JobService();
 
 export class StudentService {
   async create(data: StudentSchema, academyId: string) {
@@ -15,7 +18,20 @@ export class StudentService {
     // "" (vazio), vira null
     const email = data.email ? data.email : null;
 
-    return await repository.create({ ...data, email, academyId });
+    const student = await repository.create({ ...data, email, academyId });
+
+    try {
+      await jobService.enqueue({
+        academyId,
+        type: JobType.WELCOME,
+        relatedId: student.id,
+        payload: { to: "55" + student.phone, studentName: student.name },
+      });
+    } catch (e) {
+      console.error("Falha ao enfileirar boas-vindas:", e);
+    }
+
+    return student;
   }
 
   async list(academyId: string) {

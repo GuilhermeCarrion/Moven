@@ -63,6 +63,18 @@ export class AppointmentRepository {
     });
   }
 
+  async findNextActiveByStudent(studentId: string, academyId: string) {
+    return await prisma.appointment.findFirst({
+      where: {
+        studentId,
+        academyId,
+        status: { in: [AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED] },
+        classSession: { startAt: { gt: new Date() } },
+      },
+      orderBy: { classSession: { startAt: "asc" } },
+    });
+  }
+
   async confirm(id: string) {
     return await prisma.appointment.update({
       where: { id },

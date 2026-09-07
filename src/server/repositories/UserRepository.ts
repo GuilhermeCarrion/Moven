@@ -18,6 +18,7 @@ export class UserRepository {
       where: { id },
       select: {
         id: true,
+        academyId: true,
         email: true,
         name: true,
         active: true,
@@ -26,6 +27,16 @@ export class UserRepository {
           select: { name: true },
         },
       },
+    });
+  }
+
+  async setLoginState(
+    userId: string,
+    data: { failedLoginAttempts?: number; lockedUntil?: Date | null },
+  ) {
+    return await prisma.user.update({
+      where: { id: userId },
+      data,
     });
   }
 }
