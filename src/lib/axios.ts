@@ -5,6 +5,8 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
+const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+
 /*
  * AxiosInstance - Instancia de configuração fixa personalizada.
  *
@@ -14,42 +16,69 @@ import axios, {
  *
  * AxiosResponse - Middleware de entrada, analisa o que o servidor respondeu antes de entregar o dado para o compente
  * e caso seja "401 - Não te conheço", limpa o sistema e joga para o login.
+ *
+ * withCredentials: o navegador envia/recebe os cookies httpOnly automaticamente.
+ * Não há mais token no localStorage nem header Authorization manual.
  */
 
 export const apiPublic: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api",
+  baseURL,
+  withCredentials: true,
 });
 
 export const apiPrivate: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api",
+  baseURL,
+  withCredentials: true,
 });
 
-// Chave unica do token no localStorage
-export const TOKEN_KEY = "@Moven:token";
+/**
+ * Refresh "single-flight": se vários requests derem 401 ao mesmo tempo (access
+ * expirado), apenas UM /auth/refresh dispara. Os demais aguardam a mesma Promise.
+ * Usa apiPublic de propósito, pra não reentrar neste inteceptor.
+ */
 
-apiPrivate.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem(TOKEN_KEY);
+let refreshPromise: Promise<void> | null = null;
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  },
-);
+function runRefresh(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = apiPublic
+      .post("/auth/refresh")
+      .then(() => undefined)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
 
 apiPrivate.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: AxiosError) => {
-    const requestUrl = error.config?.url || "";
-    if (error.response?.status === 401 && !requestUrl.includes("/auth/")) {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(TOKEN_KEY);
-        window.location.href = "/login";
+  async (error: AxiosError) => {
+    const original = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    const url = original?.url || "";
+    const is401 = error.response?.status === 401;
+
+    // Endpoints que não devem tentar refresh (evita loop)
+    const isAuthEndpoint =
+      url.includes("/auth/login") ||
+      url.includes("/auth/refresh") ||
+      url.includes("/auth/logout");
+
+    if (is401 && !isAuthEndpoint && original && !original._retry) {
+      original._retry = true; // marca pra tentar só uma vez
+      try {
+        await runRefresh(); // pega access novo(cookie atualizado pelo servidor)
+        return apiPrivate(original); // repete a requisição original
+      } catch {
+        if (
+          typeof window !== "undefined" &&
+          window.location.pathname !== "/login"
+        ) {
+          window.location.href = "/login";
+        }
       }
     }
     return Promise.reject(error);

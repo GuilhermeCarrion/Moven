@@ -1,3 +1,5 @@
+import { ACCESS_COOKIE, readCookie } from "@/lib/auth/cookies";
+import { verifyAccessToken } from "@/lib/auth/tokens";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import * as jwt from "jsonwebtoken";
@@ -5,30 +7,25 @@ import { NextResponse } from "next/server";
 
 // Autenticação - Prova de identidade
 export function authenticateRequest(request: Request) {
-  const authHeader = request.headers.get("authorization");
+  // Cookie é a fonte principal
+  let token = readCookie(request, ACCESS_COOKIE);
+  if (!token) {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    }
+  }
 
-  // Valida se token existe no request
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return {
-      error: NextResponse.json(
-        { error: "Token não fornecido" },
-        { status: 401 },
-      ),
+      error: NextResponse.json({ error: "Não autenticado" }, { status: 401 }),
       userId: null,
       academyId: null,
     };
   }
 
-  // Padronização do token
-  const token = authHeader.split(" ")[1];
-
   try {
-    // Valida: Integridade e Validade do token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
-      userId: string;
-      academyId: string;
-    };
-
+    const decoded = verifyAccessToken(token);
     return {
       error: null,
       userId: decoded.userId,
@@ -37,7 +34,7 @@ export function authenticateRequest(request: Request) {
   } catch {
     return {
       error: NextResponse.json(
-        { error: "Token inválido ou expirado" },
+        { error: "Sessão inválida ou expirada" },
         { status: 401 },
       ),
       userId: null,

@@ -29,4 +29,14 @@ export class UserRepository {
       },
     });
   }
+
+  async setLoginState(
+    userId: string,
+    data: { failedLoginAttempts?: number; lockedUntil?: Date | null },
+  ) {
+    return await prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+  }
 }

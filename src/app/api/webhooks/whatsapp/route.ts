@@ -1,4 +1,5 @@
 import { handleInboudMessage } from "@/server/whatsapp/inbound";
+import { isValidSignature } from "@/server/whatsapp/signature";
 import { NextResponse } from "next/server";
 
 // GET - Verificação da Meta
@@ -17,6 +18,15 @@ export async function GET(req: Request) {
 
 // POST - recebe as mensagens
 export async function POST(req: Request) {
+  //Corpo CRU (bytes exatos) - necessário para validar a assinatura
+  const rawBody = await req.text();
+  const signature = req.headers.get("x-hub-signature-256");
+
+  // Assinatura inválida: ignora em silencio (não processa, não revela nada)
+  if (!isValidSignature(rawBody, signature)) {
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
   try {
     const body = await req.json();
     const messages = body?.entry?.[0]?.changes?.[0]?.value?.messages;

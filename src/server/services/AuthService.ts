@@ -9,6 +9,9 @@ import {
   signAccessToken,
 } from "@/lib/auth/tokens";
 
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOCK_DURATIONS_MS = 15 * 60 * 1000; //15min
+
 const userRepository = new UserRepository();
 const sessionRepository = new SessionRepository();
 
@@ -34,9 +37,28 @@ export class AuthService {
       throw new AppError("Email ou senhas invalidos", 401);
     }
 
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutes = Math.ceil(
+        (user.lockedUntil.getTime() - Date.now()) / 60000,
+      );
+      throw new AppError(
+        `Muitas tentivas. Tente novamente em ${minutes} min.`,
+        429,
+      );
+    }
+
     const passwordValid = await bcrypt.compare(password, user.password);
     if (!passwordValid || !user.active) {
+      await this.registerFailedAttempt(user);
       throw new AppError("Email ou senhas invalidos", 401);
+    }
+
+    // Sucesso: zera o contador/bloqueio se havia sujeira
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      await userRepository.setLoginState(user.id, {
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      });
     }
 
     const tokens = await this.createTokensAndSession(user.id, user.academyId);
@@ -118,5 +140,21 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  // Contabiliza uma falha de login e bloqueia a conta ao atingir o limite
+  private async registerFailedAttempt(user: {
+    id: string;
+    failedLoginAttempts: number;
+    lockedUntil: Date | null;
+  }) {
+    const lockedExpired = !!user.lockedUntil && user.lockedUntil <= new Date();
+    const attempts = (lockedExpired ? 0 : user.failedLoginAttempts) + 1;
+
+    const shouldLock = attempts >= LOGIN_MAX_ATTEMPTS;
+    await userRepository.setLoginState(user.id, {
+      failedLoginAttempts: attempts,
+      lockedUntil: shouldLock ? new Date(Date.now() + LOCK_DURATIONS_MS) : null,
+    });
   }
 }
