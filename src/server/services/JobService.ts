@@ -12,7 +12,7 @@ export class JobService {
     type: JobType;
     relatedId?: string;
     payload: Prisma.InputJsonValue;
-    sheduledFor?: Date;
+    scheduledFor?: Date;
   }) {
     if (data.relatedId) {
       const existing = await repository.findActiveByRelated(
