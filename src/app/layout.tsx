@@ -13,6 +13,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
+      <head>
+        <meta
+          name="facebook-domain-verification"
+          content="qn4rogbvi01fydbz5d5fbns9pa1ynn"
+        />
+      </head>
       <body>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
