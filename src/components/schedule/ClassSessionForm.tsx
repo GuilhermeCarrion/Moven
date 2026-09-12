@@ -58,7 +58,7 @@ export function ClassSessionForm({ onSubmit, isSubmitting }: Props) {
         <Label htmlFor="professorId">Professor</Label>
         <select
           id="professorId"
-          className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm"
+          className="mt-1 h-10 w-full rounded-lg border border-slate-200/70 bg-white/70 px-2.5 text-sm text-slate-700 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/30"
           {...register("professorId")}
         >
           <option value="">Selecione...</option>
@@ -84,42 +84,23 @@ export function ClassSessionForm({ onSubmit, isSubmitting }: Props) {
         {errors.startAt && <p className={err}>{errors.startAt.message}</p>}
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div>
           <Label htmlFor="durationMin">Duração (min)</Label>
-          <Input
-            id="durationMin"
-            type="number"
-            className={field}
-            {...register("durationMin")}
-          />
+          <Input id="durationMin" type="number" {...register("durationMin")} />
         </div>
         <div>
           <Label htmlFor="capacity">Capacidade máx.</Label>
-          <Input
-            id="capacity"
-            type="number"
-            className={field}
-            {...register("capacity")}
-          />
+          <Input id="capacity" type="number" {...register("capacity")} />
           {errors.capacity && <p className={err}>{errors.capacity.message}</p>}
         </div>
-        <div>
+        <div className="col-span-2 sm:col-span-1">
           <Label htmlFor="minCapacity">Mínimo</Label>
-          <Input
-            id="minCapacity"
-            type="number"
-            className={field}
-            {...register("minCapacity")}
-          />
+          <Input id="minCapacity" type="number" {...register("minCapacity")} />
         </div>
       </div>
 
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-focus)]"
-      >
+      <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Salvando..." : "Criar aula"}
       </Button>
     </form>

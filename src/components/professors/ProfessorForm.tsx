@@ -35,33 +35,39 @@ export function ProfessorForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div>
         <Label htmlFor="name">Nome</Label>
-        <Input id="name" className={field} {...register("name")} />
+        <Input
+          id="name"
+          placeholder="Ex: Ana Carolina Fontes"
+          className={field}
+          {...register("name")}
+        />
         {errors.name && <p className={err}>{errors.name.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="phone">Telefone (só números)</Label>
           <Input
             id="phone"
             className={field}
-            placeholder="18999998888"
+            placeholder="Ex: 18999998888"
             {...register("phone")}
           />
           {errors.phone && <p className={err}>{errors.phone.message}</p>}
         </div>
         <div>
           <Label htmlFor="cpf">CPF (só números)</Label>
-          <Input id="cpf" className={field} {...register("cpf")} />
+          <Input
+            id="cpf"
+            placeholder="Ex: 99999999988"
+            className={field}
+            {...register("cpf")}
+          />
           {errors.cpf && <p className={err}>{errors.cpf.message}</p>}
         </div>
       </div>
 
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-focus)]"
-      >
+      <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Salvando..." : "Salvar"}
       </Button>
     </form>

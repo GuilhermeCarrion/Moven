@@ -2,6 +2,7 @@
 
 import { ClassSessionForm } from "@/components/schedule/ClassSessionForm";
 import { SessionDetail } from "@/components/schedule/SessionDetail";
+import { MonthCalendar } from "@/components/schedule/MonthCalendar";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import {
@@ -9,142 +10,166 @@ import {
   useCreateClassSession,
 } from "@/hooks/useClassSessions";
 import { apiError } from "@/lib/apiError";
-import { ClassSession } from "@/types/models";
-import { ChevronLeft, ChevronRight, Plus, Users } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-function startOfDay(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
+const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
+const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+const sameDay = (a: Date, b: Date) => dayKey(a) === dayKey(b);
 
-function isSameDay(a: Date, b: Date) {
-  return startOfDay(a).getTime() === startOfDay(b).getTime();
+function gridRange(cursor: Date) {
+  const first = startOfMonth(cursor);
+  const start = new Date(first);
+  start.setDate(first.getDate() - first.getDay());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 42);
+  return { start, end };
 }
 
 export default function AgendamentosPage() {
-  const [day, setDay] = useState(() => startOfDay(new Date()));
-
-  const from = day;
-  const to = new Date(day);
-  to.setDate(to.getDate() + 1);
-
-  const { data: sessions, isLoading } = useClassSessions({
-    from: from.toISOString(),
-    to: to.toISOString(),
+  const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
+  const [selected, setSelected] = useState(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
   });
+  const [creating, setCreating] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const { start, end } = gridRange(cursor);
+  const { data: sessions, isLoading } = useClassSessions({
+    from: start.toISOString(),
+    to: end.toISOString(),
+  });
   const create = useCreateClassSession();
 
-  const [creating, setCreating] = useState(false);
-  const [selected, setSelected] = useState<ClassSession | null>(null);
+  const sessionsByDay = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }[]>();
+    (sessions ?? []).forEach((s) => {
+      const k = dayKey(new Date(s.startAt));
+      const arr = map.get(k) ?? [];
+      arr.push({ id: s.id, name: s.name });
+      map.set(k, arr);
+    });
+    return map;
+  }, [sessions]);
 
-  const shiftDay = (delta: number) => {
-    const next = new Date(day);
-    next.setDate(next.getDate() + delta);
-    setDay(startOfDay(next));
+  const daySessions = (sessions ?? [])
+    .filter((s) => sameDay(new Date(s.startAt), selected))
+    .sort(
+      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+    );
+
+  const shiftMonth = (delta: number) =>
+    setCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
+
+  const goToday = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    setCursor(startOfMonth(now));
+    setSelected(now);
   };
 
-  const isToday = isSameDay(day, new Date());
-  const label = day.toLocaleDateString("pt-BR", {
-    weekday: "long",
+  const time = (iso: string) =>
+    new Date(iso).toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  const endTime = (iso: string, min: number) =>
+    new Date(new Date(iso).getTime() + min * 60000).toLocaleTimeString(
+      "pt-BR",
+      { hour: "2-digit", minute: "2-digit" },
+    );
+
+  const panelLabel = selected.toLocaleDateString("pt-BR", {
     day: "2-digit",
-    month: "short",
+    month: "long",
+    year: "numeric",
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-medium text-foreground">Agendamentos</h1>
-        <div className="flex-1" />
+    <>
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-800">
+            Agendamentos
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Acompanhe as aulas do dia, marque presença e agende alunos.
+          </p>
+        </div>
         <Button onClick={() => setCreating(true)}>
           <Plus className="h-4 w-4" /> Nova aula
         </Button>
       </div>
 
-      {/* Navegação por dia */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => shiftDay(-1)}
-          title="Dia anterior"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="min-w-[190px] text-center">
-          <div className="text-sm font-medium capitalize text-foreground">
-            {label}
-          </div>
-          {isToday && <div className="text-xs text-cyan-700">Hoje</div>}
-        </div>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => shiftDay(1)}
-          title="Próximo dia"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        {!isToday && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDay(startOfDay(new Date()))}
-          >
-            Hoje
-          </Button>
-        )}
-      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
+        <MonthCalendar
+          cursor={cursor}
+          selected={selected}
+          sessionsByDay={sessionsByDay}
+          onSelect={setSelected}
+          onPrev={() => shiftMonth(-1)}
+          onNext={() => shiftMonth(1)}
+          onToday={goToday}
+        />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {isLoading && (
-          <p className="text-sm text-muted-foreground">Carregando...</p>
-        )}
-        {!isLoading && sessions?.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            Nenhuma aula neste dia.
-          </p>
-        )}
-        {sessions?.map((s) => {
-          const occupancy = s._count?.appointments ?? 0;
-          const full = occupancy >= s.capacity;
-          return (
-            <button
-              key={s.id}
-              onClick={() => setSelected(s)}
-              className="rounded-2xl border border-border bg-background p-4 text-left transition-colors hover:bg-muted/40"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-foreground">{s.name}</span>
-                <span className="text-sm font-medium text-cyan-700">
-                  {new Date(s.startAt).toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Prof. {s.professor?.name ?? "--"}
-              </p>
-              <p className="mt-2 flex items-center gap-1 text-sm">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span
-                  className={
-                    full
-                      ? "font-medium text-highlight-foreground"
-                      : "text-muted-foreground"
-                  }
-                >
-                  {occupancy}/{s.capacity}
-                  {full ? " · lotada" : ""}
-                </span>
-              </p>
-            </button>
-          );
-        })}
+        <div className="rounded-2xl border border-white/60 bg-white/55 p-4 shadow-xl backdrop-blur-2xl backdrop-saturate-150">
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-slate-800">
+              Agenda do dia
+            </h2>
+            <p className="text-sm capitalize text-slate-500">{panelLabel}</p>
+          </div>
+
+          {isLoading ? (
+            <p className="text-sm text-slate-400">Carregando...</p>
+          ) : daySessions.length === 0 ? (
+            <p className="text-sm text-slate-400">Nenhuma aula neste dia.</p>
+          ) : (
+            <div className="space-y-3">
+              {daySessions.map((s) => {
+                const occupancy = s._count?.appointments ?? 0;
+                const open = expandedId === s.id;
+                return (
+                  <div
+                    key={s.id}
+                    className="overflow-hidden rounded-xl border border-white/60 bg-white/50"
+                  >
+                    <button
+                      onClick={() => setExpandedId(open ? null : s.id)}
+                      className="flex w-full items-start justify-between gap-2 p-3 text-left"
+                    >
+                      <div>
+                        <div className="font-semibold text-slate-800">
+                          {s.name}
+                        </div>
+                        <div className="mt-0.5 text-xs text-slate-500">
+                          {time(s.startAt)} –{" "}
+                          {endTime(s.startAt, s.durationMin)}
+                          {" · Prof. "}
+                          {s.professor?.name ?? "--"}
+                        </div>
+                        <div className="mt-1 text-xs font-medium text-cyan-700">
+                          {occupancy}/{s.capacity} agendados
+                        </div>
+                      </div>
+                      <ChevronDown
+                        className={`h-4 w-4 flex-shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {open && (
+                      <div className="border-t border-white/60 p-3">
+                        <SessionDetail session={s} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       <Modal
@@ -165,29 +190,6 @@ export default function AgendamentosPage() {
           }
         />
       </Modal>
-
-      {/* Detalhe da aula (alunos + presença) */}
-      <Modal
-        open={!!selected}
-        onClose={() => setSelected(null)}
-        title={selected?.name ?? "Aula"}
-        maxWidth="max-w-xl"
-      >
-        {selected && (
-          <p className="text-sm text-muted-foreground">
-            Lista de alunos e presença - em breve
-          </p>
-        )}
-      </Modal>
-
-      <Modal
-        open={!!selected}
-        onClose={() => setSelected(null)}
-        title={selected?.name ?? "Aula"}
-        maxWidth="max-w-xl"
-      >
-        {selected && <SessionDetail session={selected} />}
-      </Modal>
-    </div>
+    </>
   );
 }

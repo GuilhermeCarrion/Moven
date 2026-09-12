@@ -72,9 +72,10 @@ apiPrivate.interceptors.response.use(
         await runRefresh(); // pega access novo(cookie atualizado pelo servidor)
         return apiPrivate(original); // repete a requisição original
       } catch {
+        const publicPath = ["/", "/login"];
         if (
           typeof window !== "undefined" &&
-          window.location.pathname !== "/login"
+          !publicPath.includes(window.location.pathname)
         ) {
           window.location.href = "/login";
         }

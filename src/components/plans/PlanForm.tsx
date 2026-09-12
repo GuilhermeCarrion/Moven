@@ -65,15 +65,10 @@ export function PlanForm({ plan, onSubmit, isSubmitting }: PlanFormProps) {
         {errors.name && <p className={err}>{errors.name.message}</p>}
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div>
           <Label htmlFor="credits">Aulas</Label>
-          <Input
-            id="credits"
-            type="number"
-            className={field}
-            {...register("credits")}
-          />
+          <Input id="credits" type="number" {...register("credits")} />
           {errors.credits && <p className={err}>{errors.credits.message}</p>}
         </div>
         <div>
@@ -81,31 +76,20 @@ export function PlanForm({ plan, onSubmit, isSubmitting }: PlanFormProps) {
           <Input
             id="validityDays"
             type="number"
-            className={field}
             {...register("validityDays")}
           />
           {errors.validityDays && (
             <p className={err}>{errors.validityDays.message}</p>
           )}
         </div>
-        <div>
+        <div className="col-span-2 sm:col-span-1">
           <Label htmlFor="price">Preço (R$)</Label>
-          <Input
-            id="price"
-            type="number"
-            step="0.01"
-            className={field}
-            {...register("price")}
-          />
+          <Input id="price" type="number" step="0.01" {...register("price")} />
           {errors.price && <p className={err}>{errors.price.message}</p>}
         </div>
       </div>
 
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-focus)]"
-      >
+      <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Salvando..." : "Salvar"}
       </Button>
     </form>

@@ -1,54 +1,49 @@
 "use client";
 
 import { Sidebar } from "@/components/layout/Sidebar";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { BlobField } from "@/components/layout/BlobField";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
+
+const CANVAS_BG =
+  "linear-gradient(160deg, oklch(0.95 0.015 255), oklch(0.97 0.01 300) 45%, oklch(0.96 0.012 258))";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
     <ProtectedRoute>
-      <div className="flex h-screen bg-gray-50">
-        {isMobileOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-            onClick={() => setIsMobileOpen(false)}
-          />
-        )}
-        <div
-          className={`fixed lg:static z-40 h-full transition-transform duration-300 ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-        >
-          <Sidebar
-            isCollapsed={isCollapsed}
-            onToggle={() => {
-              if (window.innerWidth < 1024) {
-                setIsMobileOpen(!isMobileOpen);
-              } else {
-                setIsCollapsed(!isCollapsed);
-              }
-            }}
-            onLogout={signOut}
-            user={user}
-          />
+      <div
+        className="relative h-screen overflow-hidden"
+        style={{ background: CANVAS_BG }}
+      >
+        <BlobField />
+
+        <div className="relative z-10 flex h-screen">
+          {/* Sidebar: só desktop */}
+          <div className="hidden lg:block">
+            <Sidebar
+              isCollapsed={isCollapsed}
+              onToggle={() => setIsCollapsed((v) => !v)}
+              onLogout={signOut}
+              user={user}
+            />
+          </div>
+
+          <main className="flex-1 overflow-y-auto p-4 pb-24 lg:p-6 lg:pb-6">
+            {children}
+          </main>
         </div>
 
-        <main className="flex-1 overflow-y-auto p-6">
-          <button
-            onClick={() => setIsMobileOpen(true)}
-            className="lg:hidden mb-4 p-2 rounded-lg hover:bg-gray-100"
-          >
-            <span className="text-2xl">|||</span>
-          </button>
-          {children}
-        </main>
+        {/* Barra inferior: só mobile */}
+        <BottomNav user={user} onLogout={signOut} />
       </div>
     </ProtectedRoute>
   );

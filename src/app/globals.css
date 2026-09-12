@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=Nunito:wght@400..800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
@@ -52,14 +53,31 @@
 }
 
 :root {
+  /* ── Claymorphism (design system Academia) ── */
+  --clay-bg: #f2f7f8;
+  --clay-surface: #d7eaef;
+  --clay-cyan: #7ec8d8;
+  --clay-yellow: #f4d35e;
+  --clay-coral: #ff8a80;
+  --clay-ink: #2a1215;
+  --clay-ink-soft: #5c2b2e;
+  --clay-shadow:
+    6px 6px 14px rgba(150, 190, 200, 0.5),
+    -6px -6px 14px rgba(255, 255, 255, 0.15);
+  --clay-shadow-sm:
+    3px 3px 8px rgba(150, 190, 200, 0.35),
+    -3px -3px 8px rgba(255, 255, 255, 0.15);
+  --clay-shadow-inset:
+    inset 5px 5px 10px rgba(150, 190, 200, 0.35),
+    inset -5px -5px 10px rgba(255, 255, 255, 0.15);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #0891b2;
-  --primary-focus: #076f8b;
+  --primary: #0fc3ee;
+  --primary-focus: #0aa8cf;
   --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -70,7 +88,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: #0891b2;
+  --ring: #0fc3ee;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -79,7 +97,7 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #0891b2;
+  --sidebar-primary: #0fc3ee;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #2cf4ff;
   --sidebar-accent-foreground: #0e7490;
@@ -87,6 +105,8 @@
   --sidebar-ring: oklch(0.708 0 0);
   --highlight: #facc15;
   --highlight-foreground: #713f12;
+  --brand-cyan: #0fc3ee;
+  --brand-yellow: #f5a623;
 }
 
 .dark {
@@ -133,5 +153,48 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Remove as setinhas dos inputs number */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+@layer components {
+  /* Escopo do claymorphism: vence o `* { font-family: Inter !important }` global.
+     Tudo dentro de .clay-scope usa Nunito; títulos usam Baloo 2. */
+  .clay-scope,
+  .clay-scope * {
+    font-family: "Nunito", system-ui, sans-serif !important;
+  }
+  .clay-scope h1,
+  .clay-scope h2,
+  .clay-scope h3,
+  .clay-scope .font-display {
+    font-family: "Baloo 2", system-ui, sans-serif !important;
+  }
+
+  /* Superfícies clay reutilizáveis */
+  .clay-raised {
+    background: var(--clay-bg);
+    box-shadow: var(--clay-shadow);
+    border-radius: 22px;
+  }
+  .clay-pressed {
+    background: var(--clay-bg);
+    box-shadow: var(--clay-shadow-inset);
+    border-radius: 16px;
+  }
+  .clay-pill {
+    border-radius: 100px;
+    box-shadow: var(--clay-shadow-sm);
   }
 }

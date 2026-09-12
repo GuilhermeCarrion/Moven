@@ -1,17 +1,17 @@
-// components/forms/LoginForm.tsx
 "use client";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { loginSchema, LoginSchema } from "@/schemas/auth.schema";
+
+const fieldWrap =
+  "flex items-center gap-3 rounded-xl border border-white/70 bg-white/50 px-3.5 py-3 transition-colors focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/25";
+const fieldInput =
+  "w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -23,105 +23,94 @@ export function LoginForm() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginSchema>({
-    resolver: zodResolver(loginSchema),
-  });
+  } = useForm<LoginSchema>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = async (data: LoginSchema) => {
     try {
       setError(null);
       await signIn(data.email, data.password);
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
-      const message = err?.response?.data?.error || "Email ou senha inválidos";
-      setError(message);
+      setError(err?.response?.data?.error || "Email ou senha inválidos");
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-8 w-full"
-      noValidate
-    >
-      {/* Mensagem de erro */}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-lg">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
           {error}
         </div>
       )}
-      {/* Campo Email */}
-      <div className="space-y-3">
-        <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-slate-600">
           Email
-        </Label>
-        <div className="relative">
-          <Input
-            id="email"
+        </label>
+        <div className={fieldWrap}>
+          <Mail className="h-4 w-4 flex-shrink-0 text-slate-400" />
+          <input
             type="email"
             placeholder="seu@email.com"
-            className="pl-10 h-11 border-gray-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+            className={fieldInput}
             {...register("email")}
           />
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         </div>
         {errors.email && (
-          <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
+          <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
         )}
       </div>
 
-      {/* Campo Senha */}
-      <div className="space-y-3">
-        <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-slate-600">
           Senha
-        </Label>
-        <div className="relative">
-          <Input
-            id="password"
+        </label>
+        <div className={fieldWrap}>
+          <Lock className="h-4 w-4 flex-shrink-0 text-slate-400" />
+          <input
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            className="pl-10 pr-10 h-11 border-gray-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+            className={fieldInput}
             {...register("password")}
           />
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent"
-            onClick={() => setShowPassword(!showPassword)}
+            onClick={() => setShowPassword((v) => !v)}
+            className="flex-shrink-0 text-slate-400 hover:text-slate-600"
+            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
           >
             {showPassword ? (
-              <EyeOff className="h-4 w-4 text-gray-400" />
+              <EyeOff className="h-4 w-4" />
             ) : (
-              <Eye className="h-4 w-4 text-gray-400" />
+              <Eye className="h-4 w-4" />
             )}
-          </Button>
+          </button>
         </div>
         {errors.password && (
-          <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
+          <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
         )}
       </div>
 
-      {/* Checkbox Lembrar */}
-      <div className="flex items-center space-x-3 pt-2">
-        <Checkbox id="remember" className="border-gray-300 rounded" />
-        <Label
-          htmlFor="remember"
-          className="text-sm text-gray-600 font-normal cursor-pointer"
+      <div className="flex items-center justify-between">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-500">
+          <input type="checkbox" className="accent-[var(--primary)] h-4 w-4" />
+          Lembrar-me
+        </label>
+        <a
+          href="#"
+          className="text-sm font-medium text-[var(--primary)] hover:underline"
         >
-          Lembrar-me neste dispositivo
-        </Label>
+          Esqueci a senha
+        </a>
       </div>
 
-      {/* Botão Entrar */}
-      <Button
+      <button
         type="submit"
-        className="w-full h-11 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold rounded-lg transition-all duration-200 mt-6"
         disabled={isSubmitting}
+        className="w-full rounded-xl bg-[var(--primary)] py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--primary-focus)] disabled:opacity-60"
       >
         {isSubmitting ? "Entrando..." : "Entrar"}
-      </Button>
+      </button>
     </form>
   );
 }

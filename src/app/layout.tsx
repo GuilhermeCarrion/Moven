@@ -18,6 +18,8 @@ export default function RootLayout({
           name="facebook-domain-verification"
           content="qn4rogbvi01fydbz5d5fbns9pa1ynn"
         />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="shortcut icon" href="MovenLogo.png" type="image/x-icon" />
       </head>
       <body>
         <QueryClientProvider client={queryClient}>
@@ -26,11 +28,6 @@ export default function RootLayout({
             <Toaster />
           </AuthProvider>
         </QueryClientProvider>
-
-        {/* Razão social visível para verificação da empresa na Meta */}
-        <footer className="fixed bottom-0 left-0 w-full text-center text-[10px] text-gray-400 py-1 pointer-events-none">
-          RR RIBEIRO REPRESENTACOES COMERCIAIS LTDA — CNPJ 24.893.658/0001-38
-        </footer>
       </body>
     </html>
   );

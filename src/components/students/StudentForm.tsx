@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Button } from "@base-ui/react/button";
+import { Button } from "../ui/button";
 
 /**
  * Schema "de formulários": os inputs entregam STRINGS, então coagimos p/ números
@@ -87,24 +87,34 @@ export function StudentForm({
     <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
       <div>
         <Label htmlFor="name">Nome</Label>
-        <Input id="name" className={field} {...register("name")} />
+        <Input
+          id="name"
+          placeholder="Ex: Joao Silva Ribeiro"
+          className={field}
+          {...register("name")}
+        />
         {errors.name && <p className={err}>{errors.name.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="phone">Telefone (Só números)</Label>
           <Input
             id="phone"
             className={field}
-            placeholder="18999998888"
+            placeholder="Ex: 18999999999"
             {...register("phone")}
           />
           {errors.phone && <p className={err}>{errors.phone.message}</p>}
         </div>
         <div>
           <Label htmlFor="cpf">CPF (Só números)</Label>
-          <Input id="cpf" className={field} {...register("cpf")} />
+          <Input
+            id="cpf"
+            placeholder="Ex: 99999999988"
+            className={field}
+            {...register("cpf")}
+          />
           {errors.cpf && <p className={err}>{errors.cpf.message}</p>}
         </div>
       </div>
@@ -120,25 +130,20 @@ export function StudentForm({
         {errors.email && <p className={err}>{errors.email.message}</p>}
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <Label htmlFor="birthDate">Nascimento</Label>
-          <Input
-            id="birthDate"
-            className={field}
-            type="date"
-            {...register("birthDate")}
-          />
-          {errors.birthDate && (
-            <p className={err}>{errors.birthDate.message}</p>
-          )}
-        </div>
+      <div className="col-span-2 sm:col-span-1">
+        <Label htmlFor="birthDate">Nascimento</Label>
+        <Input id="birthDate" type="date" {...register("birthDate")} />
+        {errors.birthDate && <p className={err}>{errors.birthDate.message}</p>}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="heightCm">Altura (cm)</Label>
           <Input
             id="heightCm"
             className={field}
             type="number"
+            placeholder="Ex: 170"
             {...register("heightCm")}
           />
           {errors.heightCm && <p className={err}>{errors.heightCm.message}</p>}
@@ -149,17 +154,14 @@ export function StudentForm({
             id="weightKg"
             className={field}
             type="number"
+            placeholder="Ex: 70"
             {...register("weightKg")}
           />
           {errors.weightKg && <p className={err}>{errors.weightKg.message}</p>}
         </div>
       </div>
 
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full bg-[var(--primary)] text-white hover:bg-[var(--primary-focus)] p-1.5 rounded-xl"
-      >
+      <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Salvando..." : "Salvar"}
       </Button>
     </form>
