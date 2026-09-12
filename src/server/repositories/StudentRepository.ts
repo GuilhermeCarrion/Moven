@@ -16,6 +16,15 @@ export class StudentRepository {
     return await prisma.student.findMany({
       where: { academyId },
       orderBy: { name: "asc" },
+      include: {
+        // Só o pacote ativo que vence primeiro (o que está sendo consumido)
+        studentPackages: {
+          where: { status: "ACTIVE" },
+          orderBy: { expiresAt: "asc" },
+          take: 1,
+          select: { creditsRemaining: true, expiresAt: true },
+        },
+      },
     });
   }
 

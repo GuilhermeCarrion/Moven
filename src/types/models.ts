@@ -12,6 +12,8 @@ export interface Student {
   weightKg: string; // Prisma Decimal chega como string no JSON
   createdAt: string;
   updatedAt: string;
+  // pacote ativo (vem do include na listagem) - 0 ou 1 item
+  studentPackages?: { creditsRemaining: number; expiresAt: string }[];
 }
 
 export interface Professor {
