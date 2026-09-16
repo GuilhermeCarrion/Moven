@@ -8,6 +8,7 @@ import {
   LogOut,
   MessageSquare,
   MoreHorizontal,
+  ShieldCheck,
   Users,
   X,
 } from "lucide-react";
@@ -25,6 +26,12 @@ const primary = [
 const extra = [
   { label: "Professores", href: "/professores", icon: GraduationCap },
   { label: "Planos", href: "/planos", icon: ClipboardList },
+  {
+    label: "Usuários",
+    href: "/usuarios",
+    icon: ShieldCheck,
+    roles: ["ADMIN", "GESTOR"],
+  },
 ];
 
 const roleLabel = (r?: string) =>
@@ -90,23 +97,25 @@ export function BottomNav({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              {extra.map((e) => {
-                const active = isActive(e.href);
-                return (
-                  <Link
-                    key={e.href}
-                    href={e.href}
-                    onClick={() => setMoreOpen(false)}
-                    className={`flex items-center gap-3 rounded-xl p-3 text-sm ${
-                      active
-                        ? "bg-[var(--brand-cyan)]/15 font-semibold text-cyan-700"
-                        : "text-slate-600 hover:bg-white/50"
-                    }`}
-                  >
-                    <e.icon className="h-5 w-5" /> {e.label}
-                  </Link>
-                );
-              })}
+              {extra
+                .filter((e) => !e.roles || e.roles.includes(user?.role))
+                .map((e) => {
+                  const active = isActive(e.href);
+                  return (
+                    <Link
+                      key={e.href}
+                      href={e.href}
+                      onClick={() => setMoreOpen(false)}
+                      className={`flex items-center gap-3 rounded-xl p-3 text-sm ${
+                        active
+                          ? "bg-[var(--brand-cyan)]/15 font-semibold text-cyan-700"
+                          : "text-slate-600 hover:bg-white/50"
+                      }`}
+                    >
+                      <e.icon className="h-5 w-5" /> {e.label}
+                    </Link>
+                  );
+                })}
             </div>
 
             <button

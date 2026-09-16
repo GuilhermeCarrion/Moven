@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -29,6 +30,12 @@ const navItems = [
   { label: "Planos", href: "/planos", icon: ClipboardList },
   { label: "Agendamentos", href: "/agendamentos", icon: Calendar },
   { label: "Mensagens", href: "/mensagens", icon: MessageSquare },
+  {
+    label: "Usuários",
+    href: "/usuarios",
+    icon: ShieldCheck,
+    roles: ["ADMIN", "GESTOR"],
+  },
 ];
 
 const roleLabel = (r?: string) =>
@@ -104,30 +111,35 @@ export function Sidebar({
 
       {/* Navegação */}
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-        {navItems.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={isCollapsed ? item.label : undefined}
-              className={`flex items-center gap-3 rounded-xl p-3 text-sm transition-colors ${
-                active
-                  ? "bg-[var(--brand-cyan)]/15 font-semibold text-cyan-700 shadow-sm"
-                  : "text-slate-500 hover:bg-white/40"
-              }`}
-            >
-              <item.icon className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
+        {navItems
+          .filter((item) => !item.roles || item.roles.includes(user?.role))
+          .map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={isCollapsed ? item.label : undefined}
+                className={`flex items-center gap-3 rounded-xl p-3 text-sm transition-colors ${
+                  active
+                    ? "bg-[var(--brand-cyan)]/15 font-semibold text-cyan-700 shadow-sm"
+                    : "text-slate-500 hover:bg-white/40"
+                }`}
+              >
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                {!isCollapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
       </nav>
 
       {/* Card do usuário */}
       <div className="relative p-3">
         <div className="relative rounded-2xl border border-white/60 bg-white/30 p-3 shadow-sm">
-          <div className="flex items-center gap-3">
+          <Link
+            href="/perfil"
+            className="flex items-center gap-3 rounded-xl p-1 transition-colors hover:bg-white/40"
+          >
             <div
               className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ring-2 ring-white/70"
               style={{
@@ -148,7 +160,7 @@ export function Sidebar({
                 </span>
               </div>
             )}
-          </div>
+          </Link>
 
           {!isCollapsed ? (
             <div className="mt-3 flex items-center justify-between border-t border-white/60 pt-2.5">
