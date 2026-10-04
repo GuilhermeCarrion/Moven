@@ -12,6 +12,11 @@ export class StudentRepository {
     });
   }
 
+  // Login do aluno: CPF é o único por academia.
+  async findByCpfOnly(cpf: string) {
+    return await prisma.student.findFirst({ where: { cpf } });
+  }
+
   async findAll(academyId: string) {
     return await prisma.student.findMany({
       where: { academyId },
@@ -36,6 +41,26 @@ export class StudentRepository {
 
   async findByPhone(phone: string) {
     return await prisma.student.findFirst({ where: { phone } });
+  }
+
+  async findProfile(id: string, academyId: string) {
+    return await prisma.student.findFirst({
+      where: { id, academyId },
+      include: {
+        studentPackages: {
+          where: { status: "ACTIVE" },
+          orderBy: { expiresAt: "asc" },
+          take: 1,
+          select: {
+            creditsRemaining: true,
+            creditsTotal: true,
+            expiresAt: true,
+            status: true,
+            plan: { select: { name: true } },
+          },
+        },
+      },
+    });
   }
 
   async update(id: string, data: Prisma.StudentUpdateInput) {

@@ -240,6 +240,7 @@ model Appointment {
   attendance AttendanceStatus @default(PENDING) // Eixo de presença
   
   confirmedAt DateTime?
+  confirmationSentAt DateTime?  
   cancelledAt DateTime?
   rescheduledAt DateTime?
   rescheduleFromId String?
@@ -308,4 +309,45 @@ model Job{
   academy Academy @relation(fields: [academyId], references: [id], onDelete: Restrict)
 
   @@index([status, scheduledFor]) // Para o worker buscar toda hora
+}
+
+// Estado atual do agendamento do aluno
+enum AppointmentEventType{
+  BOOKED
+  CONFIRMED
+  CANCELLED
+  RESCHEDULED
+  PRESENT
+  ABSENT
+  NO_SHOW
+}
+
+// Tipo do autor que "atualizou" no agendamento
+enum ActorType{
+  STUDENT
+  STAFF
+  SYSTEM
+}
+
+// Log do agendamento - A verdade sobre o agendamento
+model AppointmentEvent{
+  id String @id @default(uuid())
+  academyId String
+  appointmentId String
+  classSessionId String
+  studentId String
+
+  type AppointmentEventType
+  actorType ActorType
+  actorId String? //userId (academia), studentId (aluno), null (sistema-worker)
+
+  creditRefunded Boolean? 
+  note String? 
+
+  createdAt DateTime @default(now())
+  
+  // Log desaclopado: guarda os ID (sem relatio) - append-only
+  @@index([academyId, studentId, createdAt])
+  @@index([classSessionId])
+  @@index([appointmentId])
 }

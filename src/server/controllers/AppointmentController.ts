@@ -11,16 +11,16 @@ import { AttendanceStatus } from "@prisma/client";
 const service = new AppointmentService();
 
 export class AppointmentController {
-  async store(req: Request, academyId: string) {
+  async store(req: Request, academyId: string, userId: string) {
     try {
       const body = await req.json();
       const parsed = appointmentSchema.safeParse(body);
+      if (!parsed.success) throw new AppError("Dados inválidos", 400);
 
-      if (!parsed.success) {
-        throw new AppError("Dados inválidos", 400);
-      }
-
-      const result = await service.create(parsed.data, academyId);
+      const result = await service.create(parsed.data, academyId, {
+        type: "STAFF",
+        id: userId,
+      });
       return NextResponse.json(result, { status: 201 });
     } catch (error) {
       return handleError(error);
@@ -36,31 +36,36 @@ export class AppointmentController {
     }
   }
 
-  async action(req: Request, id: string, academyId: string) {
+  async action(req: Request, id: string, academyId: string, userId: string) {
     try {
       const body = await req.json();
       const parsed = appointmentActionSchema.safeParse(body);
-      if (!parsed.success) {
+      if (!parsed.success)
         throw new AppError(
           "Dados inválidos: " + parsed.error.issues[0].message,
           400,
         );
-      }
 
       const { action, targetClassSessionId } = parsed.data;
+      const actor = { type: "STAFF" as const, id: userId };
       let result;
 
       if (action === "confirm") {
-        result = await service.confirm(id, academyId);
+        result = await service.confirm(id, academyId, actor);
       } else if (action === "cancel") {
-        result = await service.cancel(id, academyId);
+        result = await service.cancel(id, academyId, actor);
       } else {
         if (!targetClassSessionId)
           throw new AppError(
             "targetClassSessionId é obrigatório para remarcar",
             400,
           );
-        result = await service.reschedule(id, targetClassSessionId, academyId);
+        result = await service.reschedule(
+          id,
+          targetClassSessionId,
+          academyId,
+          actor,
+        );
       }
 
       return NextResponse.json(result, { status: 200 });

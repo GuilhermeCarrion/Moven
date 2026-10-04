@@ -76,7 +76,11 @@ export function BottomNav({
           <div className="animate-in slide-in-from-bottom fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/60 bg-white/80 p-5 pb-8 shadow-2xl backdrop-blur-2xl duration-300 lg:hidden">
             <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-300" />
 
-            <div className="mb-4 flex items-center gap-3">
+            <Link
+              href="/perfil"
+              onClick={() => setMoreOpen(false)}
+              className="-m-2 mb-4 flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-white/50"
+            >
               <div
                 className="flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold text-white"
                 style={{
@@ -94,7 +98,7 @@ export function BottomNav({
                   {roleLabel(user?.role)}
                 </span>
               </div>
-            </div>
+            </Link>
 
             <div className="grid grid-cols-2 gap-2">
               {extra

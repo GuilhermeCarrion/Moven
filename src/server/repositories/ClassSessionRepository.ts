@@ -57,6 +57,15 @@ export class ClassSessionRepository {
     });
   }
 
+  async findManyByIds(ids: string[], academyId: string) {
+    if (ids.length === 0) return [];
+
+    return await prisma.classSession.findMany({
+      where: { id: { in: ids }, academyId },
+      select: { id: true, name: true, startAt: true, durationMin: true },
+    });
+  }
+
   async update(id: string, data: Partial<ClassSessionSchema>) {
     return await prisma.classSession.update({
       where: { id },

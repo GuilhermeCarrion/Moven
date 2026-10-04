@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
 const appointmentController = new AppointmentController();
 
 export async function POST(req: Request) {
-  const { error, academyId } = await authorizeRequest(req, [
+  const { error, academyId, userId } = await authorizeRequest(req, [
     Role.ADMIN,
     Role.GESTOR,
     Role.PROFESSOR,
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   if (error) return error;
 
   //Store executara a validação de lotação e duplicidade
-  return appointmentController.store(req, academyId!);
+  return appointmentController.store(req, academyId!, userId!);
 }
 
 export async function GET(req: Request) {

@@ -25,7 +25,7 @@ export default function RootLayout({
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             {children}
-            <Toaster />
+            <Toaster position="top-center" />
           </AuthProvider>
         </QueryClientProvider>
       </body>

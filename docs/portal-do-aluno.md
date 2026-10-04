@@ -3,7 +3,7 @@
 > Spec da funcionalidade que dá acesso do aluno ao sistema. Nasce do alinhamento com a
 > academia. Grande porque quebra a premissa "sistema 100% interno" — abre um **portal
 > externo** e mexe em auth, autorização, modelo de dados e uma área de front nova.
-> Status: **planejado** (sem código ainda). Branch de trabalho: `develop`.
+> Status: **entregue** — ver `portal-do-aluno-implementacao.md` para decisões e arquitetura. Branch: `develop`.
 
 ---
 

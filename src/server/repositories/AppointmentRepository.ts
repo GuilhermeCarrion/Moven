@@ -75,6 +75,48 @@ export class AppointmentRepository {
     });
   }
 
+  async findActiveByStudentInSessions(
+    studentId: string,
+    classSessionIds: string[],
+  ) {
+    if (classSessionIds.length === 0) return [];
+    return await prisma.appointment.findMany({
+      where: {
+        studentId,
+        classSessionId: { in: classSessionIds },
+        status: { in: [AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED] },
+      },
+      select: {
+        id: true,
+        classSessionId: true,
+        status: true,
+        confirmationSentAt: true,
+      },
+    });
+  }
+
+  async findAllByStudent(studentId: string, academyId: string) {
+    return await prisma.appointment.findMany({
+      where: {
+        studentId,
+        academyId,
+        status: {
+          in: [
+            AppointmentStatus.BOOKED,
+            AppointmentStatus.CONFIRMED,
+            AppointmentStatus.CANCELLED,
+          ],
+        },
+      },
+      include: {
+        classSession: {
+          select: { name: true, startAt: true, durationMin: true },
+        },
+      },
+      orderBy: { classSession: { startAt: "desc" } },
+    });
+  }
+
   async confirm(id: string) {
     return await prisma.appointment.update({
       where: { id },

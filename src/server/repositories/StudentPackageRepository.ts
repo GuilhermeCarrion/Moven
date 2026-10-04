@@ -50,6 +50,19 @@ export class StudentPackageRepository {
     });
   }
 
+  async sumActiveCredits(studentId: string, academyId: string) {
+    const r = await prisma.studentPackage.aggregate({
+      _sum: { creditsRemaining: true },
+      where: {
+        studentId,
+        academyId,
+        status: StudentPackageStatus.ACTIVE,
+        expiresAt: { gt: new Date() },
+      },
+    });
+    return r._sum.creditsRemaining ?? 0;
+  }
+
   async update(id: string, data: Prisma.StudentPackageUpdateInput) {
     return await prisma.studentPackage.update({ where: { id }, data });
   }

@@ -14,6 +14,10 @@ export class ClassSessionService {
     return await repository.findAll(academyId, from, to);
   }
 
+  async listByIds(ids: string[], academyId: string) {
+    return await repository.findManyByIds(ids, academyId);
+  }
+
   async update(
     id: string,
     data: Partial<ClassSessionSchema>,

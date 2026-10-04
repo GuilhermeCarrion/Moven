@@ -46,10 +46,18 @@ export async function handleInboudMessage(msg: InboundMessage) {
   if (!appt) return;
 
   if (intent === "confirm") {
-    await appointmentService.confirm(appt.id, student.academyId);
+    await appointmentService.confirm(appt.id, student.academyId, {
+      type: "STUDENT",
+      id: student.id,
+      note: "via WhatsApp",
+    });
     await whatsapp.sendText(phone, "Presença confirmada! Até logo :D");
   } else {
-    await appointmentService.cancel(appt.id, student.academyId);
+    await appointmentService.cancel(appt.id, student.academyId, {
+      type: "STUDENT",
+      id: student.id,
+      note: "via WhatsApp",
+    });
     await whatsapp.sendText(phone, "Tudo bem, sua precença foi cancelada!");
   }
 }

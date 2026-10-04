@@ -3,6 +3,7 @@ import { REFRESH_TOKEN_TTL_MS } from "./tokens";
 
 export const ACCESS_COOKIE = "moven_access";
 export const REFRESH_COOKIE = "moven_refresh";
+export const STUDENT_COOKIE = "moven_aluno";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -39,7 +40,7 @@ export function setAuthCookies(
 export function clearAuthCookies(res: NextResponse) {
   res.cookies.set(ACCESS_COOKIE, "", { ...baseCookie(), path: "/", maxAge: 0 });
   res.cookies.set(REFRESH_COOKIE, "", {
-    ...baseCookie,
+    ...baseCookie(),
     path: "/api/auth",
     maxAge: 0,
   });
@@ -56,4 +57,18 @@ export function readCookie(request: Request, name: string): string | null {
     if (key === name) return decodeURIComponent(rest.join("="));
   }
   return null;
+}
+
+export function setStudentCookie(res: NextResponse, token: string) {
+  res.cookies.set(STUDENT_COOKIE, token, {
+    ...baseCookie(),
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60,
+  });
+  return res;
+}
+
+export function clearStudentCookie(res: NextResponse) {
+  res.cookies.set(STUDENT_COOKIE, "", { ...baseCookie, path: "/", maxAge: 0 });
+  return res;
 }

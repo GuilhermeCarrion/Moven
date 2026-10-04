@@ -6,7 +6,7 @@ const controller = new AppointmentController();
 type Context = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, { params }: Context) {
-  const { error, academyId } = await authorizeRequest(req, [
+  const { error, academyId, userId } = await authorizeRequest(req, [
     Role.ADMIN,
     Role.GESTOR,
     Role.PROFESSOR,
@@ -14,5 +14,5 @@ export async function PATCH(req: Request, { params }: Context) {
   if (error) return error;
 
   const { id } = await params;
-  return controller.action(req, id, academyId as string);
+  return controller.action(req, id, academyId as string, userId as string);
 }

@@ -4,13 +4,22 @@ import { ClassSessionRepository } from "../repositories/ClassSessionRepository";
 import { AppError } from "@/lib/errors";
 import { StudentRepository } from "../repositories/StudentRepository";
 import { StudentPackageRepository } from "../repositories/StudentPackageRepository";
-import { AttendanceStatus, JobType } from "@prisma/client";
+import {
+  AttendanceStatus,
+  JobType,
+  AppointmentEventType,
+} from "@prisma/client";
 import { JobService } from "./JobService";
+import {
+  Actor,
+  AppointmentEventRepository,
+} from "../repositories/AppointmentEventRepository";
 
 const appointmentRepository = new AppointmentRepository();
 const sessionRepository = new ClassSessionRepository();
 const studentRepository = new StudentRepository();
 const packageRepository = new StudentPackageRepository();
+const eventRepository = new AppointmentEventRepository();
 const jobService = new JobService();
 
 const CANCEL_WINDOW_HOURS = 2; // Cancelar com <2hrs não estorna
@@ -24,7 +33,7 @@ export class AppointmentService {
     );
   }
 
-  async create(data: AppointmentSchema, academyId: string) {
+  async create(data: AppointmentSchema, academyId: string, actor: Actor) {
     // Validação de aula - Existe e aberta
     const session = await sessionRepository.findById(
       data.classSessionId,
@@ -34,6 +43,13 @@ export class AppointmentService {
     if (!session) throw new AppError("Aula não encontrada", 404);
     if (session.status !== "OPEN")
       throw new AppError("Esta aula não está aberta para agendamentos", 409);
+
+    if (session.startAt.getTime() <= Date.now()) {
+      throw new AppError(
+        "Não é possivel agendar em uma aula que já começou",
+        409,
+      );
+    }
 
     // Validação de aluno - Existe e Ativo
     const student = await studentRepository.findById(data.studentId, academyId);
@@ -75,6 +91,14 @@ export class AppointmentService {
       studentPackageId: pkg.id,
     });
 
+    await this.record(appointment.id, {
+      academyId,
+      classSessionId: data.classSessionId,
+      studentId: data.studentId,
+      type: AppointmentEventType.BOOKED,
+      actor,
+    });
+
     try {
       const twelveHoursBefore = new Date(
         session.startAt.getTime() - 12 * 60 * 60 * 1000,
@@ -97,17 +121,27 @@ export class AppointmentService {
     return appointment;
   }
 
-  async confirm(id: string, academyId: string) {
+  async confirm(id: string, academyId: string, actor: Actor) {
     const appt = await appointmentRepository.findById(id, academyId);
     if (!appt) throw new AppError("Agendamento não encontrado", 404);
 
     if (appt.status === "CANCELLED")
       throw new AppError("Agendemento cancelado não pode ser confirmado", 409);
 
-    return await appointmentRepository.confirm(id);
+    const result = await appointmentRepository.confirm(id);
+
+    await this.record(id, {
+      academyId,
+      classSessionId: appt.classSessionId,
+      studentId: appt.studentId,
+      type: AppointmentEventType.CONFIRMED,
+      actor,
+    });
+
+    return result;
   }
 
-  async cancel(id: string, academyId: string) {
+  async cancel(id: string, academyId: string, actor: Actor) {
     const appt = await appointmentRepository.findById(id, academyId);
     if (!appt) throw new AppError("Agendamento não encontrado", 404);
 
@@ -128,13 +162,29 @@ export class AppointmentService {
       creditWasDebited && hoursUntilStart >= CANCEL_WINDOW_HOURS;
 
     // Retorna resultado de todas as validações
-    return await appointmentRepository.cancel(
+    const result = await appointmentRepository.cancel(
       id,
       shouldRefound ? appt.studentPackageId : null,
     );
+
+    await this.record(id, {
+      academyId,
+      classSessionId: appt.classSessionId,
+      studentId: appt.studentId,
+      type: AppointmentEventType.CANCELLED,
+      creditRefunded: shouldRefound,
+      actor,
+    });
+
+    return result;
   }
 
-  async reschedule(id: string, targetSessionId: string, academyId: string) {
+  async reschedule(
+    id: string,
+    targetSessionId: string,
+    academyId: string,
+    actor: Actor,
+  ) {
     const old = await appointmentRepository.findById(id, academyId);
     if (!old) throw new AppError("Agendamento não encontrado", 404);
     if (old.status === "CANCELLED" || old.status === "RESCHEDULED")
@@ -159,12 +209,23 @@ export class AppointmentService {
       throw new AppError("Aluno já está agendado para a aula de destino", 409);
 
     // Remarcar NÃO consome novo crédito - carrega o mesmo pacote
-    return await appointmentRepository.reschedule(id, {
+    const result = await appointmentRepository.reschedule(id, {
       academyId,
       studentId: old.studentId,
       classSessionId: targetSessionId,
       studentPackageId: old.studentPackageId,
     });
+
+    await this.record(id, {
+      academyId,
+      classSessionId: old.classSessionId,
+      studentId: old.studentId,
+      type: AppointmentEventType.RESCHEDULED,
+      note: "Remarcada para outra aula",
+      actor,
+    });
+
+    return result;
   }
 
   async setAttendance(
@@ -194,6 +255,58 @@ export class AppointmentService {
         409,
       );
 
-    return await appointmentRepository.setAttendance(id, attendance, userId);
+    const result = await appointmentRepository.setAttendance(
+      id,
+      attendance,
+      userId,
+    );
+
+    const map: Partial<Record<AttendanceStatus, AppointmentEventType>> = {
+      PRESENT: AppointmentEventType.PRESENT,
+      ABSENT: AppointmentEventType.ABSENT,
+      NO_SHOW: AppointmentEventType.NO_SHOW,
+    };
+    const evType = map[attendance];
+    if (evType) {
+      await this.record(id, {
+        academyId,
+        classSessionId: appt.classSessionId,
+        studentId: appt.studentId,
+        type: evType,
+        actor: { type: "STAFF", id: userId },
+      });
+    }
+
+    return result;
+  }
+
+  // Grava o evento de auditoria sem quebrar ação principal
+  private async record(
+    appointmentId: string,
+    e: {
+      academyId: string;
+      classSessionId: string;
+      studentId: string;
+      type: AppointmentEventType;
+      actor: Actor;
+      creditRefunded?: boolean;
+      note?: string;
+    },
+  ) {
+    try {
+      await eventRepository.record({
+        academyId: e.academyId,
+        appointmentId,
+        classSessionId: e.classSessionId,
+        studentId: e.studentId,
+        type: e.type,
+        actorType: e.actor.type,
+        actorId: e.actor.id ?? null,
+        creditRefunded: e.creditRefunded ?? null,
+        note: e.note ?? e.actor.note ?? null,
+      });
+    } catch (error) {
+      console.error("Falha ao gravar evento de auditoria: ", error);
+    }
   }
 }

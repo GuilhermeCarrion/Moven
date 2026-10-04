@@ -163,6 +163,8 @@ Enums: `Role` · `AppointmentStatus` · `AttendanceStatus` · `ClassSessionStatu
 | Alunos / Professores | ✅ Pronto |
 | Planos / Pacotes / Créditos | ✅ Pronto |
 | Aulas / Agendamentos / Presença | ✅ Pronto |
+| Portal do Aluno (login CPF+nascimento, 3 abas, auto-cadastro) | ✅ Pronto |
+| Auditoria de agendamentos (log de eventos + regra de tempo) | ✅ Pronto |
 | Deploy (Vercel) | ✅ Base no ar (prod → Neon) |
 | Fila de Jobs + Worker | ✅ Pronto |
 | Cliente WhatsApp | 🟡 **Mock** pronto; real (Cloud API) implementado mas **dormente** |

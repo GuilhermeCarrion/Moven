@@ -7,6 +7,7 @@ import z from "zod";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { AlertTriangle } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().trim().min(3, "Informe o nome da aula"),
@@ -24,16 +25,32 @@ interface Props {
   isSubmitting: boolean;
 }
 
+function defaultStartDatetime() {
+  const d = new Date(Date.now() + 5 * 60 * 60 * 1000); // 5min adiantado para "demorar" para aparecer mensagem.
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
 export function ClassSessionForm({ onSubmit, isSubmitting }: Props) {
   const { data: professors } = useProfessors();
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { durationMin: 60, capacity: 12, minCapacity: 3 },
+    defaultValues: {
+      durationMin: 60,
+      capacity: 12,
+      minCapacity: 3,
+      startAt: defaultStartDatetime(),
+    },
   });
+
+  const startAtValue = watch("startAt");
+  const isPast =
+    !!startAtValue && new Date(startAtValue).getTime() < Date.now() - 60_000;
 
   const field = "mt-1";
   const err = "text-xs text-destructive mt-1";
@@ -82,6 +99,12 @@ export function ClassSessionForm({ onSubmit, isSubmitting }: Props) {
           {...register("startAt")}
         />
         {errors.startAt && <p className={err}>{errors.startAt.message}</p>}
+        {isPast && !errors.startAt && (
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-amber-600">
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+            Essa data já passou — a aula será criada no passado.
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">

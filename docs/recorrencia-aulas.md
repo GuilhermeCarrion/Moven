@@ -87,8 +87,9 @@ até 20/09; aulas de 25 e 27 ficam de fora."*
 - **Ajuste:** `CANCEL_WINDOW_HOURS` de 2 → 4.
 - **Front:** cadastro de aula com dropdown de template + "+ criar"; tela de recorrência
   (academia) com estados coberta/sem-crédito; o aluno **vê** as ocorrências no portal.
-- **Dependência:** o Lançador **precisa do worker rodando** (VPS) p/ materializar sozinho —
-  anda junto com a infra do WhatsApp. Dá p/ construir e testar com o worker de dev agora.
+- **Dependência:** só o **worker rodando** (dev `npm run worker` agora; VPS/Coolify em
+  produção). **NÃO depende da Meta/WhatsApp** — a materialização + débito é toda banco/worker.
+  A confirmação por WhatsApp é uma **camada separada**, plugada depois quando a Meta liberar.
 
 ---
 

@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import { whatsapp } from "@/server/whatsapp";
 import { Job, JobType } from "@prisma/client";
 
@@ -12,6 +13,13 @@ export const handlers: Record<JobType, JobHandler> = {
       p.studentName,
       p.time,
     ]);
+
+    if (job.relatedId) {
+      await prisma.appointment.update({
+        where: { id: job.relatedId },
+        data: { confirmedAt: new Date() },
+      });
+    }
   },
   WELCOME: async (job) => {
     // console.log("[FAKE] Enviaria boas-vindas ->", job.payload);
