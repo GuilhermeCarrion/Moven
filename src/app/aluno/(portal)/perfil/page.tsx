@@ -50,9 +50,9 @@ export default function PerfilPage() {
     resolver: zodResolver(studentProfileUpdateSchema),
     values: p
       ? {
-          email: p.email ?? "",
+          heightCm: p.heightCm as number,
           weightKg: Number(p.weightKg),
-          heightCm: p.heightCm ?? undefined,
+          email: p.email ?? "",
         }
       : undefined,
   });

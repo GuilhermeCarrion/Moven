@@ -9,6 +9,7 @@ import { Check, Copy, MessageCircle } from "lucide-react";
 import { apiPublic } from "@/lib/axios";
 import { studentSchema, StudentSchema } from "@/schemas/students.schema";
 import { apiError } from "@/lib/apiError";
+import { z } from "zod";
 
 const CANVAS_BG =
   "linear-gradient(160deg, oklch(0.95 0.015 255), oklch(0.97 0.01 300) 45%, oklch(0.96 0.012 258))";
@@ -39,7 +40,9 @@ export default function CadastroPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<StudentSchema>({ resolver: zodResolver(studentSchema) });
+  } = useForm<z.input<typeof studentSchema>, unknown, StudentSchema>({
+    resolver: zodResolver(studentSchema),
+  });
 
   const onSubmit = async (data: StudentSchema) => {
     try {
