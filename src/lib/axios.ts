@@ -74,7 +74,7 @@ apiPrivate.interceptors.response.use(
       } catch {
         const path = window.location.pathname;
         const publicPath = ["/", "/login"];
-        const publicPrefix = ["/aluno", "/cadastro"];
+        const publicPrefix = ["/aluno", "/cadastro", "/privacidade"];
 
         if (
           typeof window !== "undefined" &&
