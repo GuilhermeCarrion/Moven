@@ -24,11 +24,12 @@ export async function POST(req: Request) {
 
   // Assinatura inválida: ignora em silencio (não processa, não revela nada)
   if (!isValidSignature(rawBody, signature)) {
+    console.warn("[webhook] assinatura inválida");
     return NextResponse.json({ received: true }, { status: 200 });
   }
 
   try {
-    const body = await req.json();
+    const body = JSON.parse(rawBody);
     const messages = body?.entry?.[0]?.changes?.[0]?.value?.messages;
     if (Array.isArray(messages)) {
       for (const msg of messages) {
