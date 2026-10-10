@@ -9,6 +9,9 @@ export async function GET(req: Request) {
   const token = url.searchParams.get("hub.verify_token");
   const challenge = url.searchParams.get("hub.challenge");
 
+  // Sem hub.mode nao é verificação - resposta: 200 neutro
+  if (!mode) return new Response("ok", { status: 200 });
+
   if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
     return new Response(challenge, { status: 200 }); //devolve aviso
   }
