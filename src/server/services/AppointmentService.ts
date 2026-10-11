@@ -22,6 +22,10 @@ const packageRepository = new StudentPackageRepository();
 const eventRepository = new AppointmentEventRepository();
 const jobService = new JobService();
 
+const TZ = "America/Sao_Paulo";
+const formatClassTime = (d: Date) =>
+  `${d.toLocaleDateString("pt-BR", { timeZone: TZ, day: "2-digit", month: "2-digit" })} às ${d.toLocaleTimeString("pt-BR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })}`;
+
 const CANCEL_WINDOW_HOURS = 2; // Cancelar com <2hrs não estorna
 const ATTENDANCE_WINDOW_MIN = 30; // Presença só na janela aproximadamente 30min
 
@@ -110,7 +114,7 @@ export class AppointmentService {
         payload: {
           to: "55" + student.phone,
           studentName: student.name,
-          time: session.startAt.toLocaleString("pt-BR"),
+          time: formatClassTime(session.startAt),
         },
         scheduledFor: twelveHoursBefore,
       });

@@ -3,11 +3,15 @@ import { PlanRepository } from "../repositories/PlanRepository";
 import { StudentPackageRepository } from "../repositories/StudentPackageRepository";
 import { StudentRepository } from "../repositories/StudentRepository";
 import { AppError } from "@/lib/errors";
-import { StudentPackageStatus } from "@prisma/client";
+import { JobType, StudentPackageStatus } from "@prisma/client";
+import { JobService } from "./JobService";
 
 const repository = new StudentPackageRepository();
 const planRepository = new PlanRepository();
 const studentRepository = new StudentRepository();
+const jobService = new JobService();
+
+const PLAN_EXPIRY_WARN_DAYS = 3;
 
 export class StudentPackageService {
   // Atribui um plano a um aluno, DERIVANDO créditos e validade do plano.
@@ -37,15 +41,38 @@ export class StudentPackageService {
     const expiresAt = new Date(startedAt);
     expiresAt.setDate(expiresAt.getDate() + plan.validityDays);
 
-    return await repository.create({
+    const pkg = await repository.create({
       academyId,
       studentId: data.studentId,
       planId: data.planId,
-      creditsTotal: plan.credits, // derivado do plano
-      creditsRemaining: plan.credits, // Começa cheio
+      creditsTotal: plan.credits,
+      creditsRemaining: plan.credits,
       startedAt,
-      expiresAt, // startedAt + validityDays
+      expiresAt,
     });
+
+    const warnAt = new Date(
+      expiresAt.getTime() - PLAN_EXPIRY_WARN_DAYS * 86_400_000,
+    );
+    if (!plan.isTrial && warnAt > new Date()) {
+      try {
+        await jobService.enqueue({
+          academyId,
+          type: JobType.PLAN_EXPIRY,
+          relatedId: pkg.id,
+          payload: {
+            to: "55" + student.phone,
+            studentName: student.name,
+            daysLeft: String(PLAN_EXPIRY_WARN_DAYS),
+          },
+          scheduledFor: warnAt,
+        });
+      } catch (e) {
+        console.error("Falha ao infileirar aviso de vencimento: ", e);
+      }
+    }
+
+    return pkg;
   }
 
   // Função recursiva para validar expiração do plano - provisório até automação cron

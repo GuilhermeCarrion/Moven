@@ -40,7 +40,14 @@ export class StudentRepository {
   }
 
   async findByPhone(phone: string) {
-    return await prisma.student.findFirst({ where: { phone } });
+    const variants = [phone];
+    if (phone.length === 10)
+      variants.push(phone.slice(0, 2) + "9" + phone.slice(2));
+    if (phone.length === 11 && phone[2] === "9")
+      variants.push(phone.slice(0, 2) + phone.slice(3));
+    return await prisma.student.findFirst({
+      where: { phone: { in: variants } },
+    });
   }
 
   async findProfile(id: string, academyId: string) {
