@@ -29,7 +29,7 @@ export const handlers: Record<JobType, JobHandler> = {
 
     await prisma.appointment.update({
       where: { id: job.relatedId! },
-      data: { confirmedAt: new Date() },
+      data: { confirmationSentAt: new Date() },
     });
   },
   WELCOME: async (job) => {
@@ -60,11 +60,11 @@ export const handlers: Record<JobType, JobHandler> = {
     const p = job.payload as {
       to: string;
       studentName: string;
-      daysleft: string;
+      daysLeft: string;
     };
     await whatsapp.sendTemplate(p.to, "plan_expiry", [
       p.studentName,
-      p.daysleft,
+      p.daysLeft,
     ]);
   },
 };

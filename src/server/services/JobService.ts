@@ -37,7 +37,7 @@ export class JobService {
     job: { id: string; attempts: number; maxAttempts: number },
     error: string,
   ) {
-    const attempts = job.attempts;
+    const attempts = job.attempts + 1;
     const exhausted = attempts >= job.maxAttempts;
     const nextRun = new Date(Date.now() + RETRY_DELAY_MS);
 
