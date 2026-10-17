@@ -26,7 +26,7 @@ interface Props {
 }
 
 function defaultStartDatetime() {
-  const d = new Date(Date.now() + 5 * 60 * 60 * 1000); // 5min adiantado para "demorar" para aparecer mensagem.
+  const d = new Date(Date.now() + 5 * 60 * 1000); // agora + 5 min
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().slice(0, 16);
 }
@@ -56,7 +56,11 @@ export function ClassSessionForm({ onSubmit, isSubmitting }: Props) {
   const err = "text-xs text-destructive mt-1";
   return (
     <form
-      onSubmit={handleSubmit((v) => onSubmit(formSchema.parse(v)))}
+      onSubmit={handleSubmit((v) => {
+        const data = formSchema.parse(v);
+        // o navegador sabe o fuso de quem digitou, o servidor(UTC do provedor) não.
+        onSubmit({ ...data, startAt: new Date(data.startAt).toISOString() });
+      })}
       className="space-y-4"
       noValidate
     >

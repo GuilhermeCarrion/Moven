@@ -22,7 +22,7 @@ export const handlers: Record<JobType, JobHandler> = {
     const p = job.payload as { to: string; studentName: string; time: string };
 
     // console.log("[FAKE] Enviaria confirmação de presença ->", job.payload);
-    await whatsapp.sendTemplate(p.to, "presence_confirmation", [
+    await whatsapp.sendTemplate(p.to, "class_confirmation", [
       p.studentName,
       p.time,
     ]);
