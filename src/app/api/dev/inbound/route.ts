@@ -1,16 +1,30 @@
 import { devOnly } from "@/lib/devGuard";
-import { handleInboudMessage } from "@/server/whatsapp/inbound";
+import { handleWebhookValue } from "@/server/whatsapp/inbound";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const blocked = devOnly();
   if (blocked) return blocked;
 
-  const { from, intent } = await req.json();
-  await handleInboudMessage({
+  const {
     from,
-    type: "button",
-    button: { payload: intent, text: intent },
+    text,
+    phoneNumberId = "dev_phone",
+    name = "Contato Teste",
+  } = await req.json();
+
+  // Mesmo formato do "value" que a meta manda no webhook
+  await handleWebhookValue({
+    metadata: { phone_number_id: phoneNumberId },
+    contacts: [{ wa_id: from, profile: { name } }],
+    messages: [
+      {
+        id: `dev-${crypto.randomUUID()}`,
+        from,
+        type: "text",
+        text: { body: text },
+      },
+    ],
   });
   return NextResponse.json({ ok: true });
 }

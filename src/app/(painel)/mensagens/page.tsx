@@ -1,22 +1,43 @@
+"use client";
+
+import { ChatThread } from "@/components/inbox/ChatThread";
+import { ConversationList } from "@/components/inbox/ConversationList";
 import { MessageSquare } from "lucide-react";
+import { useState } from "react";
+
+export const glass =
+  "rounded-2xl border border-white/60 bg-white/55 shadow-xl backdrop-blur-2xl backdrop-saturate-150";
 
 export default function MensagensPage() {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   return (
-    <div className="flex min-h-[70vh] flex-col items-center justify-center text-center">
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-cyan-500/10 text-[var(--primary)]">
-        <MessageSquare className="h-9 w-9" />
+    // Altura fixa = tela menos o padding do layout; quem rola é a lista/thread, não a página
+    <div className="flex h-[calc(100dvh-7rem)] gap-4 lg:h-[calc(100vh-3rem)]">
+      {/* Lista: no mobile some quando uma conversa está aberta */}
+      <div
+        className={`${selectedId ? "hidden" : "flex"} w-full flex-col lg:flex lg:w-80 lg:shrink-0`}
+      >
+        <ConversationList selectedId={selectedId} onSelect={setSelectedId} />
       </div>
 
-      <h1 className="mt-6 text-2xl font-semibold text-gray-900">Mensagens</h1>
-
-      <p className="mt-2 max-w-md text-gray-500">
-        Esta funcionalidade está em desenvolvimento. Em breve você poderá
-        conversar com seus alunos pelo WhatsApp direto por aqui.
-      </p>
-
-      <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-[var(--highlight)]/20 px-4 py-1.5 text-sm font-medium text-[var(--highlight-foreground)]">
-        🚧 Em desenvolvimento
-      </span>
+      {/* Conversa: no mobile ocupa a tela; no desktop fica ao lado da lista */}
+      <div
+        className={`${selectedId ? "flex" : "hidden"} min-w-0 flex-1 flex-col lg:flex`}
+      >
+        {selectedId ? (
+          <ChatThread id={selectedId} onBack={() => setSelectedId(null)} />
+        ) : (
+          <div
+            className={`${glass} flex h-full flex-col items-center justify-center text-center`}
+          >
+            <MessageSquare className="h-10 w-10 text-[var(--primary)]" />
+            <p className="mt-3 text-sm text-slate-500">
+              Selecione uma conversa
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

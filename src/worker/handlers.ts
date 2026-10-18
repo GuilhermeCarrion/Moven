@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { InboxService } from "@/server/services/InboxService";
 import { whatsapp } from "@/server/whatsapp";
 import { Job, JobType } from "@prisma/client";
+
+const inbox = new InboxService();
 
 type JobHandler = (job: Job) => Promise<void>;
 
@@ -11,7 +14,11 @@ export const handlers: Record<JobType, JobHandler> = {
     const appt = job.relatedId
       ? await prisma.appointment.findUnique({
           where: { id: job.relatedId },
-          select: { status: true, classSession: { select: { startAt: true } } },
+          select: {
+            status: true,
+            studentId: true,
+            classSession: { select: { startAt: true } },
+          },
         })
       : null;
 
@@ -22,10 +29,15 @@ export const handlers: Record<JobType, JobHandler> = {
     const p = job.payload as { to: string; studentName: string; time: string };
 
     // console.log("[FAKE] Enviaria confirmação de presença ->", job.payload);
-    await whatsapp.sendTemplate(p.to, "class_confirmation", [
+    const sent = await whatsapp.sendTemplate(p.to, "class_confirmation", [
       p.studentName,
       p.time,
     ]);
+    await inbox.recordOutbound(job.academyId, sent, {
+      type: "template",
+      text: `Lembrete de aula: ${p.time}`,
+      studentId: appt.studentId,
+    });
 
     await prisma.appointment.update({
       where: { id: job.relatedId! },
@@ -35,7 +47,12 @@ export const handlers: Record<JobType, JobHandler> = {
   WELCOME: async (job) => {
     // console.log("[FAKE] Enviaria boas-vindas ->", job.payload);
     const p = job.payload as { to: string; studentName: string };
-    await whatsapp.sendTemplate(p.to, "welcome", [p.studentName]);
+    const sent = await whatsapp.sendTemplate(p.to, "welcome", [p.studentName]);
+    await inbox.recordOutbound(job.academyId, sent, {
+      type: "template",
+      text: "Mensagem de boas-vindas",
+      studentId: job.relatedId,
+    });
   },
   PLAN_EXPIRY: async (job) => {
     // Pula se o pacote não está mais ativo ou aluno renovou (outro ativo vencendo depois)
@@ -62,9 +79,14 @@ export const handlers: Record<JobType, JobHandler> = {
       studentName: string;
       daysLeft: string;
     };
-    await whatsapp.sendTemplate(p.to, "plan_expiry", [
+    const sent = await whatsapp.sendTemplate(p.to, "plan_expiry", [
       p.studentName,
       p.daysLeft,
     ]);
+    await inbox.recordOutbound(job.academyId, sent, {
+      type: "template",
+      text: `Aviso: plano vence em ${p.daysLeft} dias`,
+      studentId: pkg.studentId,
+    });
   },
 };

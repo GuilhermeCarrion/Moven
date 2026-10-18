@@ -1,4 +1,4 @@
-import { handleInboudMessage } from "@/server/whatsapp/inbound";
+import { handleWebhookValue } from "@/server/whatsapp/inbound";
 import { isValidSignature } from "@/server/whatsapp/signature";
 import { NextResponse } from "next/server";
 
@@ -32,13 +32,8 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = JSON.parse(rawBody);
-    const messages = body?.entry?.[0]?.changes?.[0]?.value?.messages;
-    if (Array.isArray(messages)) {
-      for (const msg of messages) {
-        await handleInboudMessage(msg);
-      }
-    }
+    const value = JSON.parse(rawBody)?.entry?.[0]?.changes?.[0]?.value;
+    if (value?.metadata) await handleWebhookValue(value);
   } catch (e) {
     console.error("[webhook] erro ao processar:", e);
   }

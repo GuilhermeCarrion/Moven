@@ -7,11 +7,11 @@ export class MockWhatsAppClient implements WhatsAppClient {
     variables: string[] = [],
   ): Promise<SendResult> {
     console.log(`[WA-MOCK] template "${template}" -> ${to}`, variables);
-    return { id: `mock-${Date.now()}` };
+    return { id: `mock-${Date.now()}`, waId: to };
   }
 
   async sendText(to: string, text: string): Promise<SendResult> {
     console.log(`[WA-MOCK] texto -> ${to}: ${text}`);
-    return { id: `mock-${Date.now()}` };
+    return { id: `mock-${Date.now()}`, waId: to };
   }
 }

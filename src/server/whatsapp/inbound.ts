@@ -1,18 +1,23 @@
 import { whatsapp } from ".";
+import { AcademyReposistory } from "../repositories/AcademyRepository";
 import { AppointmentRepository } from "../repositories/AppointmentRepository";
 import { StudentRepository } from "../repositories/StudentRepository";
 import { AppointmentService } from "../services/AppointmentService";
+import { InboxService } from "../services/InboxService";
+import { InboundMessage } from "./types";
 
 const appointmentService = new AppointmentService();
+const academyRepo = new AcademyReposistory();
 const studentRepo = new StudentRepository();
 const appointmentRepo = new AppointmentRepository();
+const inbox = new InboxService();
 
-type InboundMessage = {
-  from: string;
-  type: string;
-  text?: { body: string };
-  button?: { payload: string; text: string };
-  interactive?: { button_reply?: { id: string; title: string } };
+// Valor de cada notificação da Meta
+type WebhookValue = {
+  metadata: { phone_number_id: string };
+  contacts?: { wa_id: string; profile?: { name?: string } }[];
+  messages?: InboundMessage[];
+  statuses?: { id: string; status: string }[];
 };
 
 // traduz mensagem em intenção
@@ -25,39 +30,75 @@ function parseIntent(msg: InboundMessage): "confirm" | "cancel" | "unknown" {
 
   const v = raw.trim().toLowerCase();
   if (["confirm", "confirmar", "sim", "1"].includes(v)) return "confirm";
-  if (["cancel", "cancelar", "nao", "não", "2"].includes(v)) return "cancel";
+  if (["cancel", "cancelar", "não", "nao", "2"].includes(v)) return "cancel";
   return "unknown";
 }
 
-export async function handleInboudMessage(msg: InboundMessage) {
+export async function handleWebhookValue(value: WebhookValue) {
+  const academy = await academyRepo.findByPhoneNumberId(
+    value.metadata.phone_number_id,
+  );
+
+  // numero que não pertence a nenhuma academia
+  if (!academy) {
+    console.warn(
+      "[webhook] phone_number_id sem academia: ",
+      value.metadata.phone_number_id,
+    );
+    return;
+  }
+
+  // vista / lida / falhou das mensagens enviadas pela academia
+  for (const s of value.statuses ?? [])
+    await inbox.recordStatus(s.id, s.status);
+
+  for (const msg of value.messages ?? []) {
+    const student = await studentRepo.findByPhone(
+      msg.from.replace(/^55/, ""),
+      academy.id,
+    );
+    const isNew = await inbox.recordInbound(academy.id, msg, {
+      name: value.contacts?.find((c) => c.wa_id === msg.from)?.profile?.name,
+      studentId: student?.id,
+    });
+
+    // Repetido, já tratado antes não confirma/cancela dnv
+    if (isNew && student) await runAutomation(msg, student.id, academy.id);
+  }
+}
+
+async function runAutomation(
+  msg: InboundMessage,
+  studentId: string,
+  academyId: string,
+) {
   const intent = parseIntent(msg);
-  const phone = msg.from;
-  console.log(`[webhook] de ${phone} -> intenção ${intent}`);
+  console.log(`[webhook] de ${msg.from} -> intenção ${intent}`);
   if (intent === "unknown") return;
 
-  const local = phone.replace(/^55/, ""); // remove cod. pais
-  const student = await studentRepo.findByPhone(local);
-  if (!student) return;
-
   const appt = await appointmentRepo.findNextActiveByStudent(
-    student.id,
-    student.academyId,
+    studentId,
+    academyId,
   );
   if (!appt) return;
 
-  if (intent === "confirm") {
-    await appointmentService.confirm(appt.id, student.academyId, {
-      type: "STUDENT",
-      id: student.id,
-      note: "via WhatsApp",
-    });
-    await whatsapp.sendText(phone, "Presença confirmada! Até logo :D");
-  } else {
-    await appointmentService.cancel(appt.id, student.academyId, {
-      type: "STUDENT",
-      id: student.id,
-      note: "via WhatsApp",
-    });
-    await whatsapp.sendText(phone, "Tudo bem, sua precença foi cancelada!");
-  }
+  const actor = {
+    type: "STUDENT" as const,
+    id: studentId,
+    note: "via WhatsApp",
+  };
+  if (intent === "confirm")
+    await appointmentService.confirm(appt.id, academyId, actor);
+  else await appointmentService.cancel(appt.id, academyId, actor);
+
+  const reply =
+    intent === "confirm"
+      ? "Presença confirmada! Até logo :D"
+      : "Tudo bem, sua presença foi cancelada!";
+  const sent = await whatsapp.sendText(msg.from, reply);
+  await inbox.recordOutbound(academyId, sent, {
+    type: "text",
+    text: reply,
+    studentId,
+  });
 }

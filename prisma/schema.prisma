@@ -82,6 +82,8 @@ model Academy {
   plans Plan[]
   studentPackages StudentPackage[]
   jobs Job[]
+  whatsappPhoneNumberId String? @unique
+  conversations Conversation[]
 }
 
 model User {
@@ -137,6 +139,7 @@ model Student {
   academy Academy @relation(fields: [academyId], references: [id])
   appointments Appointment[]
   studentPackages StudentPackage[]
+  conversations Conversation[]
 
   // CPF único POR academia
   @@unique([academyId, cpf])
@@ -350,4 +353,56 @@ model AppointmentEvent{
   @@index([academyId, studentId, createdAt])
   @@index([classSessionId])
   @@index([appointmentId])
+}
+
+enum MessageDirection {
+  IN
+  OUT
+}
+
+enum MessageStatus {
+  RECEIVED //mensagem de entrada
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model Conversation {
+  id String @id @default(uuid())
+  academyId String
+  waId String // Contato canonico devlvido pela Meta (chave da conersa)
+  contactName String? // Nome do perfil do whatsapp
+  studentId String? // Vinculo com aluno, quando telefone bate
+
+  lastInboundAt DateTime? // Ultima mensagem do contato -> base da janela de 24h
+  lastMessageAt DateTime? // Ordena a lista de conversa 
+  unreadCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Restrict)
+  student Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@unique([academyId, waId])
+  @@index([academyId, lastMessageAt])
+}
+
+model Message {
+  id String @id @default(uuid())
+  conversationId String
+  direction MessageDirection
+  type String //"text", "button", "template", "image"... (tipo cru da Meta)
+  text String?
+  waMessageId String? @unique // id da meta: ignora webhook repetido + atualiza status
+  status MessageStatus
+  sentById String?  // userId de quam respondeu pelo chat; null = aluno ou automação.
+
+  createdAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }

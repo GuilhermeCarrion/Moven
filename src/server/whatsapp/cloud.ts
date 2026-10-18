@@ -8,7 +8,10 @@ export class CloudWhatsAppClient implements WhatsAppClient {
     private phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID!,
   ) {}
 
-  private async post(body: unknown): Promise<SendResult> {
+  private async post(body: {
+    to: string;
+    [key: string]: unknown;
+  }): Promise<SendResult> {
     const res = await fetch(
       `https://graph.facebook.com/${API_VERSION}/${this.phoneNumberId}/messages`,
       {
@@ -23,7 +26,10 @@ export class CloudWhatsAppClient implements WhatsAppClient {
     const data = await res.json();
     if (!res.ok)
       throw new Error(`WhatsApp API ${res.status}: ${JSON.stringify(data)}`);
-    return { id: data.messages?.[0]?.id ?? "unknown" };
+    return {
+      id: data.messages?.[0]?.id ?? "unknown",
+      waId: data.contacts?.[0]?.wa_id ?? body.to,
+    };
   }
 
   async sendTemplate(
