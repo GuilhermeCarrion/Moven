@@ -56,6 +56,7 @@ export class StudentAppointmentController {
         studentId,
         academyId,
         parsed.data.classSessionId,
+        parsed.data.releaseAppointmentId,
       );
       return NextResponse.json(result, { status: 201 });
     } catch (error) {

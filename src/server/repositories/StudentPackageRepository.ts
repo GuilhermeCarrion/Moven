@@ -50,6 +50,20 @@ export class StudentPackageRepository {
     });
   }
 
+  // Pacotes que ainda podm pagar alguma aula: ativos, com créditos e não vencidos
+  async listUsable(studentId: string, academyId: string) {
+    return await prisma.studentPackage.findMany({
+      where: {
+        studentId,
+        academyId,
+        status: StudentPackageStatus.ACTIVE,
+        creditsRemaining: { gt: 0 },
+        expiresAt: { gt: new Date() },
+      },
+      select: { id: true, creditsRemaining: true, expiresAt: true },
+    });
+  }
+
   async sumActiveCredits(studentId: string, academyId: string) {
     const r = await prisma.studentPackage.aggregate({
       _sum: { creditsRemaining: true },

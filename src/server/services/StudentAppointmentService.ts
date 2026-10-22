@@ -52,12 +52,17 @@ export class StudentAppointmentService {
     }));
   }
 
-  async book(studentId: string, academyId: string, classSessionId: string) {
-    // o core (create) já bloqueia aula que já começou
+  async book(
+    studentId: string,
+    academyId: string,
+    classSessionId: string,
+    releaseAppointmentId?: string,
+  ) {
     return await appointmentService.create(
       { studentId, classSessionId },
       academyId,
       { type: "STUDENT", id: studentId },
+      { releaseAppointmentId },
     );
   }
 
@@ -72,7 +77,7 @@ export class StudentAppointmentService {
 
   async cancel(studentId: string, academyId: string, appointmentId: string) {
     const appt = await this.loadOwned(studentId, academyId, appointmentId);
-    this.assertBeforeStart(appt);
+    this.assertBeforeDeadline(appt);
     return await appointmentService.cancel(appointmentId, academyId, {
       type: "STUDENT",
       id: studentId,
@@ -143,5 +148,21 @@ export class StudentAppointmentService {
         "A aula já começou. Fale com a academia para alterações.",
         409,
       );
+  }
+
+  // Depois do prazo o crédito já saiu: cancelar pelo portal não é mais possível
+  private assertBeforeDeadline(appt: {
+    classSession: { startAt: Date };
+    academy: { cancelWindowHours: number };
+  }) {
+    const deadline =
+      appt.classSession.startAt.getTime() -
+      appt.academy.cancelWindowHours * 3_600_000;
+    if (Date.now() >= deadline) {
+      throw new AppError(
+        `O prazo para cancelar (${appt.academy.cancelWindowHours}h antes da aula) já passou. Fale com a academia`,
+        409,
+      );
+    }
   }
 }

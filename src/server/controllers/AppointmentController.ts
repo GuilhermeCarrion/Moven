@@ -6,7 +6,7 @@ import {
   attendanceSchema,
 } from "@/schemas/appointment.schema";
 import { NextResponse } from "next/server";
-import { AttendanceStatus } from "@prisma/client";
+import { AttendanceStatus, CancelReason } from "@prisma/client";
 
 const service = new AppointmentService();
 
@@ -60,12 +60,7 @@ export class AppointmentController {
             "targetClassSessionId é obrigatório para remarcar",
             400,
           );
-        result = await service.reschedule(
-          id,
-          targetClassSessionId,
-          academyId,
-          actor,
-        );
+        result = await service.cancel(id, academyId, actor, CancelReason.STAFF);
       }
 
       return NextResponse.json(result, { status: 200 });

@@ -14,6 +14,8 @@ import {
   Actor,
   AppointmentEventRepository,
 } from "../repositories/AppointmentEventRepository";
+import { CreditService } from "./CreditService";
+import { CancelReason } from "@prisma/client";
 
 const appointmentRepository = new AppointmentRepository();
 const sessionRepository = new ClassSessionRepository();
@@ -21,6 +23,7 @@ const studentRepository = new StudentRepository();
 const packageRepository = new StudentPackageRepository();
 const eventRepository = new AppointmentEventRepository();
 const jobService = new JobService();
+const creditService = new CreditService();
 
 const TZ = "America/Sao_Paulo";
 const formatClassTime = (d: Date) =>
@@ -37,7 +40,12 @@ export class AppointmentService {
     );
   }
 
-  async create(data: AppointmentSchema, academyId: string, actor: Actor) {
+  async create(
+    data: AppointmentSchema,
+    academyId: string,
+    actor: Actor,
+    opts: { recurrenceId?: string; releaseAppointmentId?: string } = {},
+  ) {
     // Validação de aula - Existe e aberta
     const session = await sessionRepository.findById(
       data.classSessionId,
@@ -75,32 +83,36 @@ export class AppointmentService {
     if (duplicate)
       throw new AppError("Aluno já está agendado para essa aula", 409);
 
-    // Marca vencidos antes de procurar um pacote valido
-    await packageRepository.expireStale(academyId);
-
-    const pkg = await packageRepository.findActiveForBooking(
+    // Cobertura: precisa existir credito de um pacote valido na data da aula
+    const check = await creditService.checkNewReservation(
       data.studentId,
       academyId,
+      session.startAt,
     );
-    if (!pkg)
-      throw new AppError(
-        "Aluno não possui um pacote ativo com créditos disponíveis",
-        409,
+    if (!check.covered)
+      throw new AppError("Sem credito para esta data. Renove seu pacote.", 409);
+
+    if (check.displaced.length > 0) {
+      // A nova reserva tiraria a cobertura de outra: quem escolhe qual saí é o aluno.
+      if (!opts.releaseAppointmentId)
+        throw new AppError(
+          "Esta aula vai usar o crédito de outra reserva. Escolha qual cancelar.",
+          409,
+        );
+      await this.release(
+        opts.releaseAppointmentId,
+        data.studentId,
+        academyId,
+        actor,
+        session.startAt,
       );
+    }
 
-    const appointment = await appointmentRepository.createWithDebit({
+    const appointment = await appointmentRepository.create({
       academyId,
       studentId: data.studentId,
       classSessionId: data.classSessionId,
-      studentPackageId: pkg.id,
-    });
-
-    await this.record(appointment.id, {
-      academyId,
-      classSessionId: data.classSessionId,
-      studentId: data.studentId,
-      type: AppointmentEventType.BOOKED,
-      actor,
+      recurrenceId: opts.recurrenceId ?? null,
     });
 
     try {
@@ -145,30 +157,31 @@ export class AppointmentService {
     return result;
   }
 
-  async cancel(id: string, academyId: string, actor: Actor) {
+  async cancel(
+    id: string,
+    academyId: string,
+    actor: Actor,
+    reason: CancelReason = CancelReason.STUDENT,
+    note?: string,
+  ) {
     const appt = await appointmentRepository.findById(id, academyId);
     if (!appt) throw new AppError("Agendamento não encontrado", 404);
 
     if (appt.status === "CANCELLED")
-      throw new AppError("Agendemento cancelado não pode ser confirmado", 409);
+      throw new AppError("Agendamento já está cancelado", 409);
 
-    // Verifica se crédito foi debitado
-    const creditWasDebited =
-      !!appt.studentPackageId &&
-      (appt.status === "BOOKED" || appt.status === "CONFIRMED");
+    // Só existe estorno se o crédito já saiu
+    // Antes do prazo devolve, depois o crédito fica
+    const deadline =
+      appt.classSession.startAt.getTime() -
+      appt.academy.cancelWindowHours * 3_600_000;
+    const refund =
+      !!appt.debitedAt && !!appt.studentPackageId && Date.now() < deadline;
 
-    // Valida hora para inicio
-    const hoursUntilStart =
-      (appt.classSession.startAt.getTime() - Date.now()) / 3_600_000;
-
-    // Verifica se vai fazer o "estorno" ou não
-    const shouldRefound =
-      creditWasDebited && hoursUntilStart >= CANCEL_WINDOW_HOURS;
-
-    // Retorna resultado de todas as validações
     const result = await appointmentRepository.cancel(
       id,
-      shouldRefound ? appt.studentPackageId : null,
+      reason,
+      refund ? appt.studentPackageId : null,
     );
 
     await this.record(id, {
@@ -176,7 +189,9 @@ export class AppointmentService {
       classSessionId: appt.classSessionId,
       studentId: appt.studentId,
       type: AppointmentEventType.CANCELLED,
-      creditRefunded: shouldRefound,
+      // vazio = nada foi debitado (cancelou sem custo), true/false = havia debito e foi/não foi estornado
+      creditRefunded: appt.debitedAt ? refund : undefined,
+      note,
       actor,
     });
 
@@ -218,6 +233,7 @@ export class AppointmentService {
       studentId: old.studentId,
       classSessionId: targetSessionId,
       studentPackageId: old.studentPackageId,
+      debitedAt: old.debitedAt, // remarcar não cobra de novo: leva o débito (se já houve)
     });
 
     await this.record(id, {
@@ -312,5 +328,29 @@ export class AppointmentService {
     } catch (error) {
       console.error("Falha ao gravar evento de auditoria: ", error);
     }
+  }
+
+  private async release(
+    id: string,
+    studentId: string,
+    academyId: string,
+    actor: Actor,
+    newStartAt: Date,
+  ) {
+    const appt = await appointmentRepository.findById(id, academyId);
+    const pending = appt?.status === "BOOKED" || appt?.status === "CONFIRMED";
+    if (!appt || appt.studentId !== studentId || appt.debitedAt || !pending)
+      throw new AppError(
+        "A reserva escolhida para liberar o crédito é inválida",
+        409,
+      );
+
+    await this.cancel(
+      id,
+      academyId,
+      actor,
+      CancelReason.CREDIT_USED,
+      `Crédito usado na aula dde ${formatClassTime(newStartAt)}`,
+    );
   }
 }

@@ -3,6 +3,7 @@ import { AppointmentSchema } from "@/schemas/appointment.schema";
 import {
   AppointmentStatus,
   AttendanceStatus,
+  CancelReason,
   StudentPackageStatus,
 } from "@prisma/client";
 
@@ -10,29 +11,27 @@ type CreateAppointmentData = {
   academyId: string;
   studentId: string;
   classSessionId: string;
-  studentPackageId: string;
+  recurrenceId?: string | null;
 };
 
 export class AppointmentRepository {
-  // cria agendamento e debita 1 crédito na MESMA transação
-  async createWithDebit(data: CreateAppointmentData) {
-    return await prisma.$transaction(async (tx) => {
-      const appointment = await tx.appointment.create({ data });
+  // Reserva: NÃO debita. O crédito sai no prazo, pela varredura do worker
+  async create(data: CreateAppointmentData) {
+    return await prisma.appointment.create({ data });
+  }
 
-      const pkg = await tx.studentPackage.update({
-        where: { id: data.studentPackageId },
-        data: { creditsRemaining: { decrement: 1 } },
-      });
-
-      // Caso o créditos do pacote zere, já atualiza o status
-      if (pkg.creditsRemaining <= 0) {
-        await tx.studentPackage.update({
-          where: { id: data.studentPackageId },
-          data: { status: StudentPackageStatus.DEPLETED },
-        });
-      }
-
-      return appointment;
+  // Reservas ainda não debitadas de aulas futuras: a base da cobertura
+  async listPendingByStudent(studentId: string, academyId: string) {
+    return await prisma.appointment.findMany({
+      where: {
+        studentId,
+        academyId,
+        status: { in: [AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED] },
+        debitedAt: null,
+        classSession: { startAt: { gt: new Date() } },
+      },
+      select: { id: true, classSession: { select: { startAt: true } } },
+      orderBy: { classSession: { startAt: "asc" } },
     });
   }
 
@@ -52,6 +51,7 @@ export class AppointmentRepository {
       where: { id, academyId },
       include: {
         classSession: { select: { startAt: true, durationMin: true } },
+        academy: { select: { cancelWindowHours: true } },
       },
     });
   }
@@ -125,11 +125,19 @@ export class AppointmentRepository {
   }
 
   // Cancela e se informado, estorna crédito ao pacote de origem
-  async cancel(id: string, refundPackageId?: string | null) {
+  async cancel(
+    id: string,
+    reason: CancelReason,
+    refundPackageId?: string | null,
+  ) {
     return await prisma.$transaction(async (tx) => {
       const appointment = await tx.appointment.update({
         where: { id },
-        data: { status: AppointmentStatus.CANCELLED, cancelledAt: new Date() },
+        data: {
+          status: AppointmentStatus.CANCELLED,
+          cancelledAt: new Date(),
+          cancelReason: reason,
+        },
       });
 
       if (refundPackageId) {
@@ -158,6 +166,7 @@ export class AppointmentRepository {
       studentId: string;
       classSessionId: string;
       studentPackageId: string | null;
+      debitedAt: Date | null;
     },
   ) {
     return await prisma.$transaction(async (tx) => {

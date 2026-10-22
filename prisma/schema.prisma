@@ -84,6 +84,10 @@ model Academy {
   jobs Job[]
   whatsappPhoneNumberId String? @unique
   conversations Conversation[]
+  cancelWindowHours Int @default(4) // prazo de cancelamento = momento do débito
+  classTemplates ClassTemplate[]
+  scheduleSlots ScheduleSlot[]
+  recurrences Recurrence[]
 }
 
 model User {
@@ -137,9 +141,11 @@ model Student {
   updatedAt DateTime @updatedAt
 
   academy Academy @relation(fields: [academyId], references: [id])
+  
   appointments Appointment[]
   studentPackages StudentPackage[]
   conversations Conversation[]
+  recurrences Recurrence[]
 
   // CPF único POR academia
   @@unique([academyId, cpf])
@@ -161,7 +167,9 @@ model Professor {
 
   academy Academy @relation(fields: [academyId], references: [id], onDelete: Restrict)
   user User? @relation(fields: [userId], references: [id])
+  
   classSession ClassSession[]
+  scheduleSlots ScheduleSlot[]
 
   @@unique([academyId, cpf])
 }
@@ -225,10 +233,16 @@ model ClassSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  templateId String?
+  scheduleSlotId String? // preenchido quando a aula foi gerada pela grade
+
   academy Academy @relation(fields: [academyId], references: [id], onDelete: Restrict)
   professor Professor @relation(fields: [professorId], references: [id], onDelete: Restrict)
   appointments Appointment[]
 
+  template ClassTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  scheduleSlot ScheduleSlot? @relation(fields: [scheduleSlotId], references: [id], onDelete: SetNull)
+  
   @@unique([academyId, startAt]) //Evita duas aulas no mesmo horario
 }
 
@@ -253,10 +267,15 @@ model Appointment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  recurrenceId String?
+  debitedAt DateTime? // quando o credito saiu; null = reserva ainda não debitada
+  cancelReason CancelReason?
+
   academy Academy @relation(fields: [academyId], references: [id], onDelete: Restrict)
   student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
   classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Restrict)
   studentPackage StudentPackage? @relation(fields: [studentPackageId], references: [id], onDelete: SetNull)
+  recurrence Recurrence? @relation(fields: [recurrenceId], references: [id], onDelete: SetNull)
 
   // Regras de estrutura
   @@index([classSessionId, studentId])
@@ -405,4 +424,72 @@ model Message {
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
+}
+
+enum CancelReason {
+  STUDENT // aluno cancelou = "pular": a recorrência NÃO reserva essa data de novo
+  STAFF // academia cancelou a reserva
+  CLASS_CANCELLED // a aula inteira foi cancelada
+  CREDIT_USED // crédito usado em outra aula (o aluno escolheu)
+  NO_CREDIT // sem cobertura (24h antes ou no prazo)
+  RECURRENCE_CHANGED // o horario saiu da recorrencia do aluno
+}
+
+model ClassTemplate{
+  id String @id @default(uuid())
+  academyId String
+  name String
+  durationMin Int @default(50)
+  capacity Int
+  minCapacity Int @default(3)
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Restrict)
+  slots ScheduleSlot[]
+  classSessions ClassSession[]
+
+  @@unique([academyId, name])
+}
+
+model ScheduleSlot {
+  id String @id @default(uuid())
+  academyId String
+  weekday Int // 0 - Domingo ... 6 - sabado (igual ao getDay do JS)
+  time String // 7:00, no horario da academia
+  professorId String
+  templateId String
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Restrict)
+  professor Professor @relation(fields: [professorId], references: [id], onDelete: Restrict)
+  template ClassTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  classSessions ClassSession[]
+  recurrences Recurrence[]
+
+  @@unique([academyId, weekday, time])
+}
+
+model Recurrence {
+  id String @id @default(uuid())
+  academyId String 
+  studentId String
+  scheduleSlotId String
+  active Boolean @default(true)
+  createdById String? // userId se a academia configurou; null = o proprio aluno
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Restrict)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  scheduleSlot ScheduleSlot @relation(fields: [scheduleSlotId], references: [id], onDelete: Restrict)
+  appointments Appointment[]
+
+  @@unique([studentId, scheduleSlotId])
 }
