@@ -1,5 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=Nunito:wght@400..800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -53,23 +53,6 @@
 }
 
 :root {
-  /* ── Claymorphism (design system Academia) ── */
-  --clay-bg: #f2f7f8;
-  --clay-surface: #d7eaef;
-  --clay-cyan: #7ec8d8;
-  --clay-yellow: #f4d35e;
-  --clay-coral: #ff8a80;
-  --clay-ink: #2a1215;
-  --clay-ink-soft: #5c2b2e;
-  --clay-shadow:
-    6px 6px 14px rgba(150, 190, 200, 0.5),
-    -6px -6px 14px rgba(255, 255, 255, 0.15);
-  --clay-shadow-sm:
-    3px 3px 8px rgba(150, 190, 200, 0.35),
-    -3px -3px 8px rgba(255, 255, 255, 0.15);
-  --clay-shadow-inset:
-    inset 5px 5px 10px rgba(150, 190, 200, 0.35),
-    inset -5px -5px 10px rgba(255, 255, 255, 0.15);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -154,6 +137,13 @@
   html {
     @apply font-sans;
   }
+  /* Mesma camada do `*` acima: só assim a classe vence o Inter !important */
+  .mv-serif {
+    font-family: "Instrument Serif", Georgia, serif !important;
+  }
+  .mv-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+  }
 }
 
 /* Remove as setinhas dos inputs number */
@@ -168,33 +158,85 @@ input[type="number"] {
   appearance: textfield;
 }
 
+/* ── Landing (Moven) ──
+   Paleta guiada por UMA cor (--mv-brand); os tons claros/escuros são derivados
+   com color-mix, então trocar a marca (ex.: academia verde) é trocar uma variável. */
+.mv-landing {
+  --mv-brand: #1463ff;
+  --mv-accent: #ff7a3d;
+  --mv-ink: #0b1530;
+  --mv-ink-soft: #4a5672;
+  --mv-canvas: #06070b;
+  color: rgb(255 255 255 / 0.62);
+  background: var(--mv-canvas);
+}
+/* Derivados recalculados em qualquer elemento que redefina --mv-brand
+   (ex.: a prévia de cores por academia). */
+.mv-landing,
+.mv-themed {
+  --mv-brand-50: color-mix(in oklch, var(--mv-brand) 7%, white);
+  --mv-brand-100: color-mix(in oklch, var(--mv-brand) 14%, white);
+  --mv-brand-200: color-mix(in oklch, var(--mv-brand) 28%, white);
+  --mv-brand-light: color-mix(in oklch, var(--mv-brand) 65%, white);
+  --mv-brand-700: color-mix(in oklch, var(--mv-brand) 78%, black);
+  --mv-brand-deep: color-mix(in oklch, var(--mv-brand) 30%, var(--mv-ink));
+}
+
 @layer components {
-  /* Escopo do claymorphism: vence o `* { font-family: Inter !important }` global.
-     Tudo dentro de .clay-scope usa Nunito; títulos usam Baloo 2. */
-  .clay-scope,
-  .clay-scope * {
-    font-family: "Nunito", system-ui, sans-serif !important;
+  /* Vidro líquido sobre o fundo escuro: quase transparente, com reflexo no topo
+     (inset claro) e um degradê diagonal que imita a luz batendo no vidro. */
+  .mv-glass {
+    @apply backdrop-blur-[18px] backdrop-saturate-[1.8];
+    background: linear-gradient(135deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.02) 60%);
+    border: 1px solid rgb(255 255 255 / 0.14);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      inset 0 -1px 0 rgb(255 255 255 / 0.04),
+      0 24px 48px -24px rgb(0 0 0 / 0.7);
   }
-  .clay-scope h1,
-  .clay-scope h2,
-  .clay-scope h3,
-  .clay-scope .font-display {
-    font-family: "Baloo 2", system-ui, sans-serif !important;
+  .mv-glass-strong {
+    @apply backdrop-blur-[24px] backdrop-saturate-[1.8];
+    background: linear-gradient(135deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.04) 60%);
+    border: 1px solid rgb(255 255 255 / 0.18);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.28),
+      0 40px 80px -30px color-mix(in oklch, var(--mv-brand) 45%, transparent);
   }
 
-  /* Superfícies clay reutilizáveis */
-  .clay-raised {
-    background: var(--clay-bg);
-    box-shadow: var(--clay-shadow);
-    border-radius: 22px;
+  /* Entrada dos cards "passando por cima" do fundo */
+  .mv-reveal {
+    opacity: 0;
+    transform: translateY(48px) scale(0.98);
+    transition:
+      opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: var(--mv-delay, 0ms);
   }
-  .clay-pressed {
-    background: var(--clay-bg);
-    box-shadow: var(--clay-shadow-inset);
-    border-radius: 16px;
+  .mv-reveal[data-visible="true"] {
+    opacity: 1;
+    transform: none;
   }
-  .clay-pill {
-    border-radius: 100px;
-    box-shadow: var(--clay-shadow-sm);
+  /* Fita de segmentos rolando sem fim (pausa no hover) */
+  .mv-marquee {
+    animation: mv-marquee 45s linear infinite;
+  }
+  .mv-marquee:hover {
+    animation-play-state: paused;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mv-reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+    .mv-marquee {
+      animation: none;
+    }
+  }
+}
+
+@keyframes mv-marquee {
+  to {
+    transform: translateX(-50%);
   }
 }
