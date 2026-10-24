@@ -16,6 +16,12 @@ export class AcademyReposistory {
       select: { id: true },
     });
   }
+
+  async listForSweep() {
+    return await prisma.academy.findMany({
+      select: { id: true, cancelWindowHours: true },
+    });
+  }
 }
 
 export type Actor = { type: ActorType; id?: string; note?: string | null };

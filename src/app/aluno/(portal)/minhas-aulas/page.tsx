@@ -97,6 +97,8 @@ function eventLabel(e: HistoryEvent): string {
       return "Compareceu";
     case "ABSENT":
       return "Faltou (avisou)";
+    case "DEBITED":
+      return "Crédito debitado";
     case "NO_SHOW":
       return "Não avisado";
   }
@@ -121,6 +123,7 @@ function eventDot(type: HistoryEvent["type"]): string {
       return "bg-amber-500";
     case "BOOKED":
       return "bg-cyan-500";
+    case "DEBITED":
     case "ABSENT":
       return "bg-slate-400";
     default:

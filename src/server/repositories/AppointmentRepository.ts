@@ -117,6 +117,62 @@ export class AppointmentRepository {
     });
   }
 
+  //Reserva cujo o prazo de debito chegou (aula ate "until") e que ainda não foram debitadas
+  async listDueForDebit(academyId: string, until: Date) {
+    return await prisma.appointment.findMany({
+      where: {
+        academyId,
+        status: { in: [AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED] },
+        debitedAt: null,
+        classSession: { startAt: { lte: until }, status: { not: "CANCELLED" } },
+      },
+      select: {
+        id: true,
+        studentId: true,
+        classSessionId: true,
+        classSession: { select: { startAt: true } },
+      },
+    });
+  }
+
+  // Reservas pendentes de aulas entre agora e "until"
+  async listPendingStartingBefore(academyId: string, until: Date) {
+    return await prisma.appointment.findMany({
+      where: {
+        academyId,
+        status: { in: [AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED] },
+        debitedAt: null,
+        classSession: { startAt: { gt: new Date(), lte: until } },
+      },
+      select: { id: true, studentId: true },
+    });
+  }
+
+  // Debito atomico: só debita se ainda não foi debitado (seguro mesmo se rodar duas vezes)
+  async debit(appointmentId: string, packageId: string) {
+    return await prisma.$transaction(async (tx) => {
+      const claimed = await tx.appointment.updateMany({
+        where: { id: appointmentId, debitedAt: null },
+        data: { debitedAt: new Date(), studentPackageId: packageId },
+      });
+
+      if (claimed.count === 0) return false;
+
+      const pkg = await tx.studentPackage.update({
+        where: { id: packageId },
+        data: { creditsRemaining: { decrement: 1 } },
+      });
+
+      if (pkg.creditsRemaining <= 0) {
+        await tx.studentPackage.update({
+          where: { id: packageId },
+          data: { status: StudentPackageStatus.DEPLETED },
+        });
+      }
+      return true;
+    });
+  }
+
   async confirm(id: string) {
     return await prisma.appointment.update({
       where: { id },

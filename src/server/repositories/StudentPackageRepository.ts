@@ -28,25 +28,25 @@ export class StudentPackageRepository {
     });
   }
 
-  // Pacote elegivel pra agendar: ativo, com crédito e dentro da validade.
-  // Usa o que expira primeiro pra não disperdiçar crédito.
-  async findActiveForBooking(studentId: string, academyId: string) {
+  // Aluno já usou algum pacote de plano experimental
+  async findTrialByStudent(studentId: string, academyId: string) {
+    return await prisma.studentPackage.findFirst({
+      where: { studentId, academyId, plan: { isTrial: true } },
+    });
+  }
+
+  // Pacote que paga uma aula: ativo, com crédito e válido NA DATA da aula; o que vence primeiro
+  async findForDebit(studentId: string, academyId: string, classDate: Date) {
     return await prisma.studentPackage.findFirst({
       where: {
         studentId,
         academyId,
         status: StudentPackageStatus.ACTIVE,
         creditsRemaining: { gt: 0 },
-        expiresAt: { gt: new Date() },
+        expiresAt: { gte: classDate },
       },
       orderBy: { expiresAt: "asc" },
-    });
-  }
-
-  // Aluno já usou algum pacote de plano experimental
-  async findTrialByStudent(studentId: string, academyId: string) {
-    return await prisma.studentPackage.findFirst({
-      where: { studentId, academyId, plan: { isTrial: true } },
+      select: { id: true },
     });
   }
 

@@ -16,6 +16,7 @@ import {
 } from "../repositories/AppointmentEventRepository";
 import { CreditService } from "./CreditService";
 import { CancelReason } from "@prisma/client";
+import { string } from "zod";
 
 const appointmentRepository = new AppointmentRepository();
 const sessionRepository = new ClassSessionRepository();
@@ -31,6 +32,8 @@ const formatClassTime = (d: Date) =>
 
 const CANCEL_WINDOW_HOURS = 2; // Cancelar com <2hrs não estorna
 const ATTENDANCE_WINDOW_MIN = 30; // Presença só na janela aproximadamente 30min
+
+const SYSTEM: Actor = { type: "SYSTEM" };
 
 export class AppointmentService {
   async listBySession(classSessionId: string, academyId: string) {
@@ -155,6 +158,40 @@ export class AppointmentService {
     });
 
     return result;
+  }
+
+  // Prazo cehgou: debita do pacote válido na data da aula. Sem crédito: cancela (rede de segurança)
+  async debit(
+    appt: {
+      id: string;
+      studentId: string;
+      classSessionId: string;
+      startAt: Date;
+    },
+    academyId: string,
+  ) {
+    const pkg = await packageRepository.findForDebit(
+      appt.studentId,
+      academyId,
+      appt.startAt,
+    );
+    if (!pkg)
+      return this.cancel(
+        appt.id,
+        academyId,
+        SYSTEM,
+        CancelReason.NO_CREDIT,
+        "Crédito insuficiente no prazo",
+      );
+    const debited = await appointmentRepository.debit(appt.id, pkg.id);
+    if (debited)
+      await this.record(appt.id, {
+        academyId,
+        classSessionId: appt.classSessionId,
+        studentId: appt.studentId,
+        type: AppointmentEventType.DEBITED,
+        actor: SYSTEM,
+      });
   }
 
   async cancel(

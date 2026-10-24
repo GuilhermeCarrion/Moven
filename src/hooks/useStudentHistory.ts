@@ -10,7 +10,8 @@ export type EventType =
   | "RESCHEDULED"
   | "PRESENT"
   | "ABSENT"
-  | "NO_SHOW";
+  | "NO_SHOW"
+  | "DEBITED";
 
 export interface HistoryEvent {
   type: EventType;
