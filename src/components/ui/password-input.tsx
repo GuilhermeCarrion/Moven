@@ -16,7 +16,7 @@ export const PasswordInput = forwardRef<
         ref={ref}
         type={show ? "text" : "password"}
         className={cn(
-          "h-10 w-full min-w-0 rounded-lg border border-slate-200/70 bg-white/70 pl-3 pr-10 text-sm text-slate-800 shadow-sm transition-colors outline-none placeholder:text-slate-400 focus-visible:border-[var(--primary)] focus-visible:ring-2 focus-visible:ring-[var(--primary)]/30 disabled:cursor-not-allowed disabled:opacity-50",
+          "h-11 w-full min-w-0 rounded-xl border border-[var(--mv-line)] bg-[var(--mv-field)] pl-3.5 pr-11 text-base text-[var(--mv-text)] transition-colors outline-none placeholder:text-[var(--mv-text-soft)]/70 focus-visible:border-[var(--mv-brand)] focus-visible:ring-4 focus-visible:ring-[var(--mv-brand)]/15 disabled:cursor-not-allowed disabled:opacity-50",
           className,
         )}
         {...props}
@@ -26,7 +26,7 @@ export const PasswordInput = forwardRef<
         type="button"
         onClick={() => setShow((v) => !v)}
         aria-label={show ? "Ocultar senha" : "Mostrar senha"}
-        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+        className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--mv-text-soft)] transition-colors hover:text-[var(--mv-text)]"
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>

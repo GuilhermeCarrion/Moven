@@ -170,9 +170,67 @@ input[type="number"] {
   color: rgb(255 255 255 / 0.62);
   background: var(--mv-canvas);
 }
+/* ── Sistema (app) ──
+   Mesma marca da landing, versão "leve": claro por padrão, escuro via html.dark.
+   Depois do login, --mv-brand vira a cor da academia. Guia: docs/design-system.md */
+.mv-app {
+  --mv-brand: #1463ff;
+  --mv-accent: #ff7a3d;
+  --mv-bg: #f4f6fb;
+  --mv-panel: #e9eef8;
+  --mv-surface: #ffffff;
+  --mv-field: #ffffff;
+  --mv-text: #0b1530;
+  --mv-text-soft: #5b6680;
+  --mv-line: rgb(11 21 48 / 0.1);
+  --mv-cloud: #6f86b8;
+  --mv-glass-a: rgb(255 255 255 / 0.75);
+  --mv-glass-b: rgb(255 255 255 / 0.45);
+  --mv-glass-line: rgb(255 255 255 / 0.9);
+  --mv-glass-hi: rgb(255 255 255 / 1);
+  --mv-glass-shadow: color-mix(in oklch, var(--mv-brand) 30%, transparent);
+  /* Componentes antigos (shadcn) usam --primary/--ring: dentro do app eles seguem a marca */
+  --primary: var(--mv-brand);
+  --primary-focus: var(--mv-brand-700);
+  --ring: var(--mv-brand);
+  color: var(--mv-text);
+  background: var(--mv-bg);
+}
+.dark .mv-app {
+  --mv-bg: #0a0c12;
+  --mv-panel: #06070b;
+  --mv-surface: #11141c;
+  --mv-field: #0d1017;
+  --mv-text: #f3f5fa;
+  --mv-text-soft: #9aa3b8;
+  --mv-line: rgb(255 255 255 / 0.1);
+  --mv-cloud: #e7ecf5;
+  --mv-glass-a: rgb(255 255 255 / 0.1);
+  --mv-glass-b: rgb(255 255 255 / 0.02);
+  --mv-glass-line: rgb(255 255 255 / 0.14);
+  --mv-glass-hi: rgb(255 255 255 / 0.22);
+  --mv-glass-shadow: rgb(0 0 0 / 0.7);
+  /* Tons da marca no escuro: misturados com a superfície (não com branco); texto azul mais claro */
+  --mv-brand-50: color-mix(in oklch, var(--mv-brand) 10%, var(--mv-surface));
+  --mv-brand-100: color-mix(in oklch, var(--mv-brand) 18%, var(--mv-surface));
+  --mv-brand-200: color-mix(in oklch, var(--mv-brand) 34%, var(--mv-surface));
+  --mv-brand-700: color-mix(in oklch, var(--mv-brand) 55%, white);
+}
+
+/* Fundo do painel: degradê diagonal suave (nem branco puro, nem manchas redondas) */
+.mv-canvas {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--mv-brand) 11%, var(--mv-bg)) 0%,
+    var(--mv-bg) 45%,
+    color-mix(in oklch, #38bdf8 10%, var(--mv-bg)) 100%
+  );
+}
+
 /* Derivados recalculados em qualquer elemento que redefina --mv-brand
    (ex.: a prévia de cores por academia). */
 .mv-landing,
+.mv-app,
 .mv-themed {
   --mv-brand-50: color-mix(in oklch, var(--mv-brand) 7%, white);
   --mv-brand-100: color-mix(in oklch, var(--mv-brand) 14%, white);
@@ -187,12 +245,17 @@ input[type="number"] {
      (inset claro) e um degradê diagonal que imita a luz batendo no vidro. */
   .mv-glass {
     @apply backdrop-blur-[18px] backdrop-saturate-[1.8];
-    background: linear-gradient(135deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.02) 60%);
-    border: 1px solid rgb(255 255 255 / 0.14);
+    /* Padrão = vidro escuro (landing); o .mv-app troca pelas variáveis do tema */
+    background: linear-gradient(
+      135deg,
+      var(--mv-glass-a, rgb(255 255 255 / 0.1)),
+      var(--mv-glass-b, rgb(255 255 255 / 0.02)) 60%
+    );
+    border: 1px solid var(--mv-glass-line, rgb(255 255 255 / 0.14));
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      inset 0 1px 0 var(--mv-glass-hi, rgb(255 255 255 / 0.22)),
       inset 0 -1px 0 rgb(255 255 255 / 0.04),
-      0 24px 48px -24px rgb(0 0 0 / 0.7);
+      0 24px 48px -24px var(--mv-glass-shadow, rgb(0 0 0 / 0.7));
   }
   .mv-glass-strong {
     @apply backdrop-blur-[24px] backdrop-saturate-[1.8];

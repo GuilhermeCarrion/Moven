@@ -1,7 +1,9 @@
 "use client";
 
+import { CloudField } from "@/components/landing/CloudField";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { ClassSessionForm } from "@/components/schedule/ClassSessionForm";
-import { SessionDetail } from "@/components/schedule/SessionDetail";
+import { DayAgenda } from "@/components/schedule/DayAgenda";
 import { MonthCalendar } from "@/components/schedule/MonthCalendar";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -10,7 +12,7 @@ import {
   useCreateClassSession,
 } from "@/hooks/useClassSessions";
 import { apiError } from "@/lib/apiError";
-import { ChevronDown, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -35,7 +37,6 @@ export default function AgendamentosPage() {
     return d;
   });
   const [creating, setCreating] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { start, end } = gridRange(cursor);
   const { data: sessions, isLoading } = useClassSessions({
@@ -61,6 +62,11 @@ export default function AgendamentosPage() {
       (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
     );
 
+  const monthCount = (sessions ?? []).filter((s) => {
+    const d = new Date(s.startAt);
+    return d.getMonth() === cursor.getMonth() && d.getFullYear() === cursor.getFullYear();
+  }).length;
+
   const shiftMonth = (delta: number) =>
     setCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
 
@@ -71,125 +77,85 @@ export default function AgendamentosPage() {
     setSelected(now);
   };
 
-  const time = (iso: string) =>
-    new Date(iso).toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  const endTime = (iso: string, min: number) =>
-    new Date(new Date(iso).getTime() + min * 60000).toLocaleTimeString(
-      "pt-BR",
-      { hour: "2-digit", minute: "2-digit" },
-    );
-
-  const panelLabel = selected.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-
   return (
-    <>
-      <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-            Agendamentos
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Acompanhe as aulas do dia, marque presença e agende alunos.
-          </p>
-        </div>
-        <Button onClick={() => setCreating(true)}>
-          <Plus className="h-4 w-4" /> Nova aula
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
-        <MonthCalendar
-          cursor={cursor}
-          selected={selected}
-          sessionsByDay={sessionsByDay}
-          onSelect={setSelected}
-          onPrev={() => shiftMonth(-1)}
-          onNext={() => shiftMonth(1)}
-          onToday={goToday}
-        />
-
-        <div className="rounded-2xl border border-white/60 bg-white/55 p-4 shadow-xl backdrop-blur-2xl backdrop-saturate-150">
-          <div className="mb-4">
-            <h2 className="text-base font-bold text-slate-800">
-              Agenda do dia
-            </h2>
-            <p className="text-sm capitalize text-slate-500">{panelLabel}</p>
-          </div>
-
-          {isLoading ? (
-            <p className="text-sm text-slate-400">Carregando...</p>
-          ) : daySessions.length === 0 ? (
-            <p className="text-sm text-slate-400">Nenhuma aula neste dia.</p>
-          ) : (
-            <div className="space-y-3">
-              {daySessions.map((s) => {
-                const occupancy = s._count?.appointments ?? 0;
-                const open = expandedId === s.id;
-                return (
-                  <div
-                    key={s.id}
-                    className="overflow-hidden rounded-xl border border-white/60 bg-white/50"
-                  >
-                    <button
-                      onClick={() => setExpandedId(open ? null : s.id)}
-                      className="flex w-full items-start justify-between gap-2 p-3 text-left"
-                    >
-                      <div>
-                        <div className="font-semibold text-slate-800">
-                          {s.name}
-                        </div>
-                        <div className="mt-0.5 text-xs text-slate-500">
-                          {time(s.startAt)} –{" "}
-                          {endTime(s.startAt, s.durationMin)}
-                          {" · Prof. "}
-                          {s.professor?.name ?? "--"}
-                        </div>
-                        <div className="mt-1 text-xs font-medium text-cyan-700">
-                          {occupancy}/{s.capacity} agendados
-                        </div>
-                      </div>
-                      <ChevronDown
-                        className={`h-4 w-4 flex-shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
-                      />
-                    </button>
-                    {open && (
-                      <div className="border-t border-white/60 p-3">
-                        <SessionDetail session={s} />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <Modal
-        open={creating}
-        onClose={() => setCreating(false)}
-        title="Nova aula"
+    // altura da tela menos o padding do main (p-5): o template do painel tem altura automática, então % não funciona
+    <div className="relative xl:min-h-[calc(100vh-2.5rem)]">
+      {/* Nuvens só de fundo, em duas zonas (canto inferior direito e topo direito), atrás dos cards.
+          Só com calendário e dia lado a lado (xl): abaixo disso não sobra espaço livre. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-y-5 -right-5 left-0 hidden xl:block"
+        style={
+          {
+            "--mv-ambient-alpha": 0.5,
+            maskImage:
+              "radial-gradient(ellipse 130% 105% at 100% 100%, black 40%, transparent 85%), radial-gradient(ellipse 55% 45% at 100% 0%, black 30%, transparent 90%)",
+          } as React.CSSProperties
+        }
       >
-        <ClassSessionForm
-          isSubmitting={create.isPending}
-          onSubmit={(data) =>
-            create.mutate(data, {
-              onSuccess: () => {
-                toast.success("Aula criada");
-                setCreating(false);
-              },
-              onError: (e) => toast.error(apiError(e)),
-            })
+        <CloudField ambient spotlight={false} />
+      </div>
+
+      <div className="relative mx-auto max-w-[1400px] space-y-4 sm:space-y-5">
+        <PageHeader
+          eyebrow={`Agenda · ${monthCount} ${monthCount === 1 ? "aula" : "aulas"} em ${cursor.toLocaleDateString("pt-BR", { month: "long" })}`}
+          title="Agendamentos"
+          description="Escolha um dia no calendário para ver as aulas, agendar alunos e marcar presença."
+          actions={
+            <Button onClick={() => setCreating(true)}>
+              <Plus className="h-[18px] w-[18px]" /> Nova aula
+            </Button>
           }
         />
-      </Modal>
-    </>
+
+        {/* Calendário → horários do dia (lado a lado só a partir de 1280px) */}
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_440px]">
+          <MonthCalendar
+            cursor={cursor}
+            selected={selected}
+            sessionsByDay={sessionsByDay}
+            onSelect={setSelected}
+            onPrev={() => shiftMonth(-1)}
+            onNext={() => shiftMonth(1)}
+            onToday={goToday}
+          />
+          <DayAgenda date={selected} sessions={daySessions} isLoading={isLoading} />
+        </div>
+
+        <Modal
+          open={creating}
+          onClose={() => setCreating(false)}
+          title="Nova aula"
+          description="A aula aparece no calendário e os alunos já podem ser agendados."
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setCreating(false)} className="hidden sm:inline-flex">
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                form="class-session-form"
+                disabled={create.isPending}
+                className="w-full sm:w-auto sm:min-w-44"
+              >
+                {create.isPending ? "Salvando..." : "Criar aula"}
+              </Button>
+            </>
+          }
+        >
+          <ClassSessionForm
+            onSubmit={(data) =>
+              create.mutate(data, {
+                onSuccess: () => {
+                  toast.success("Aula criada");
+                  setCreating(false);
+                },
+                onError: (e) => toast.error(apiError(e)),
+              })
+            }
+          />
+        </Modal>
+      </div>
+    </div>
   );
 }

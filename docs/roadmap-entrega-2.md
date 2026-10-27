@@ -87,8 +87,8 @@ cliente → texto livre. Fora → **só template aprovado**.
 
 ## EPIC D — Redesign do sistema (track separado)
 
-Linguagem visual: **em definição** (claymorphism descartado no sistema; o dev vai buscar
-referência). A landing pública fica no claymorphism, isolada (`.clay-scope`), só p/ a Meta.
+Linguagem visual: **definida** em `docs/design-system.md` (escuro + nuvens em blocos na
+landing, versão leve clara/escura no sistema; login é a tela de referência). Claymorphism removido.
 
 | Task | Descrição | Prioridade |
 |---|---|---|
@@ -111,7 +111,7 @@ referência). A landing pública fica no claymorphism, isolada (`.clay-scope`), 
 
 ## Ordem sugerida
 
-1. **D1** (redesign) — o dev já tem um system design feito no Claude Design; próximo foco.
+1. **D1** (redesign) — login pronto como referência; próximo: dashboard, seguindo `docs/design-system.md`.
 2. **A3** (templates) — pode adiantar em paralelo; não depende da aprovação da Meta.
 3. **E1–E6** (inbox só texto) — dá pra construir com mocks; só a entrega real depende do Epic A.
 4. **A1** (validar envio) assim que a Meta aprovar.

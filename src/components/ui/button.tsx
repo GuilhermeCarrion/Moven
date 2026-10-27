@@ -11,17 +11,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--primary)] text-white shadow-sm hover:bg-[var(--primary-focus)]",
+          "bg-[var(--mv-brand)] text-white shadow-[0_10px_24px_-12px_var(--mv-brand)] hover:brightness-110",
         secondary:
-          "border border-white/70 bg-white/70 text-slate-700 backdrop-blur-sm hover:bg-white",
+          "border border-[var(--mv-line)] bg-[var(--mv-surface)] text-[var(--mv-text)] hover:bg-[var(--mv-brand-50)]",
         outline:
-          "border border-slate-200 bg-white/50 text-slate-700 hover:bg-white",
-        ghost: "text-slate-600 hover:bg-white/50",
-        destructive: "bg-red-50 text-red-600 hover:bg-red-100",
-        link: "text-[var(--primary)] underline-offset-4 hover:underline",
+          "border border-[var(--mv-line)] bg-transparent text-[var(--mv-text)] hover:bg-[var(--mv-brand-50)]",
+        ghost: "text-[var(--mv-text-soft)] hover:bg-[var(--mv-brand-50)] hover:text-[var(--mv-text)]",
+        destructive: "bg-red-500/10 text-red-600 hover:bg-red-500/15 dark:text-red-300",
+        link: "text-[var(--mv-brand-700)] underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-4",
+        default: "h-11 px-5 text-[15px]",
         xs: "h-7 px-2.5 text-xs",
         sm: "h-8 px-3 text-xs",
         lg: "h-11 px-5",

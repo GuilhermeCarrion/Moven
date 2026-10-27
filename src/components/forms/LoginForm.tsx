@@ -2,16 +2,19 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { loginSchema, LoginSchema } from "@/schemas/auth.schema";
 
+// text-base nos campos: 16px evita o zoom automático do iOS ao focar
 const fieldWrap =
-  "flex items-center gap-3 rounded-xl border border-white/70 bg-white/50 px-3.5 py-3 transition-colors focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/25";
+  "flex h-12 items-center gap-3 rounded-xl border border-[var(--mv-line)] bg-[var(--mv-field)] px-4 transition-colors focus-within:border-[var(--mv-brand)] focus-within:ring-4 focus-within:ring-[var(--mv-brand)]/15";
 const fieldInput =
-  "w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400";
+  "w-full bg-transparent text-base text-[var(--mv-text)] outline-none placeholder:text-[var(--mv-text-soft)]/70";
+const label = "mb-2 block text-sm font-medium text-[var(--mv-text)]";
+const fieldError = "mt-1.5 text-sm text-red-600 dark:text-red-400";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -38,78 +41,89 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+        <div
+          role="alert"
+          className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300"
+        >
           {error}
         </div>
       )}
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-600">
-          Email
+        <label htmlFor="login-email" className={label}>
+          E-mail
         </label>
         <div className={fieldWrap}>
-          <Mail className="h-4 w-4 flex-shrink-0 text-slate-400" />
+          <Mail className="h-[18px] w-[18px] flex-shrink-0 text-[var(--mv-text-soft)]" />
           <input
+            id="login-email"
             type="email"
+            autoComplete="email"
             placeholder="seu@email.com"
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "login-email-error" : undefined}
             className={fieldInput}
             {...register("email")}
           />
         </div>
         {errors.email && (
-          <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
+          <p id="login-email-error" className={fieldError}>
+            {errors.email.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-600">
+        <label htmlFor="login-password" className={label}>
           Senha
         </label>
         <div className={fieldWrap}>
-          <Lock className="h-4 w-4 flex-shrink-0 text-slate-400" />
+          <Lock className="h-[18px] w-[18px] flex-shrink-0 text-[var(--mv-text-soft)]" />
           <input
+            id="login-password"
             type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
             placeholder="••••••••"
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? "login-password-error" : undefined}
             className={fieldInput}
             {...register("password")}
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="flex-shrink-0 text-slate-400 hover:text-slate-600"
+            className="-mr-2 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-[var(--mv-text-soft)] transition-colors hover:text-[var(--mv-text)]"
             aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
           >
             {showPassword ? (
-              <EyeOff className="h-4 w-4" />
+              <EyeOff className="h-[18px] w-[18px]" />
             ) : (
-              <Eye className="h-4 w-4" />
+              <Eye className="h-[18px] w-[18px]" />
             )}
           </button>
         </div>
         {errors.password && (
-          <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+          <p id="login-password-error" className={fieldError}>
+            {errors.password.message}
+          </p>
         )}
-      </div>
-
-      <div className="flex items-center justify-between">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-500">
-          <input type="checkbox" className="accent-[var(--primary)] h-4 w-4" />
-          Lembrar-me
-        </label>
-        <a
-          href="#"
-          className="text-sm font-medium text-[var(--primary)] hover:underline"
-        >
-          Esqueci a senha
-        </a>
       </div>
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-xl bg-[var(--primary)] py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--primary-focus)] disabled:opacity-60"
+        className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--mv-brand)] text-base font-semibold text-white shadow-[0_12px_28px_-12px_var(--mv-brand)] transition-all hover:brightness-110 disabled:opacity-60"
       >
-        {isSubmitting ? "Entrando..." : "Entrar"}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="h-[18px] w-[18px] animate-spin" /> Entrando…
+          </>
+        ) : (
+          <>
+            Entrar
+            <ArrowRight className="h-[18px] w-[18px] transition-transform group-hover:translate-x-0.5" />
+          </>
+        )}
       </button>
     </form>
   );

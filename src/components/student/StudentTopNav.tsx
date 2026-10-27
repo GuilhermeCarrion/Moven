@@ -1,16 +1,14 @@
 "use client";
 
-import { CalendarDays, ClipboardList, LogOut, User } from "lucide-react";
+import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MovenLogo } from "@/components/layout/MovenLogo";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useStudentAuth } from "@/contexts/StudentAuthContext";
+import { studentTabs } from "./StudentBottomNav";
 
-const tabs = [
-  { label: "Aulas", href: "/aluno/aulas", icon: CalendarDays },
-  { label: "Minhas Aulas", href: "/aluno/minhas-aulas", icon: ClipboardList },
-  { label: "Perfil", href: "/aluno/perfil", icon: User },
-];
-
+/** Barra de vidro do desktop; no celular a navegação é a barra de baixo. */
 export function StudentTopNav() {
   const pathname = usePathname();
   const { signOut } = useStudentAuth();
@@ -18,53 +16,38 @@ export function StudentTopNav() {
     pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 hidden border-b border-white/60 bg-white/70 backdrop-blur-xl lg:block">
-      <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-6">
-        <div className="flex items-center gap-2">
-          <div
-            className="relative flex h-8 w-8 items-center justify-center rounded-lg"
-            style={{ background: "var(--brand-cyan)" }}
-          >
-            <div
-              className="absolute h-1.5 w-3 rounded bg-white"
-              style={{ transform: "rotate(-30deg)", top: 10, left: 6 }}
-            />
-            <div
-              className="absolute h-1.5 w-3 rounded bg-white"
-              style={{ transform: "rotate(-30deg)", bottom: 9, right: 5 }}
-            />
-          </div>
-          <span className="text-lg font-extrabold tracking-tight text-slate-800">
-            Moven
-          </span>
-        </div>
+    <header className="mv-glass fixed inset-x-3 top-3 z-30 mx-auto hidden h-16 max-w-4xl items-center justify-between rounded-[22px] px-4 lg:flex">
+      <MovenLogo />
 
-        <nav className="flex items-center gap-1">
-          {tabs.map((t) => {
-            const active = isActive(t.href);
-            return (
-              <Link
-                key={t.href}
-                href={t.href}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm transition-colors ${
-                  active
-                    ? "bg-cyan-50 font-semibold text-cyan-700"
-                    : "text-slate-500 hover:bg-white/60"
-                }`}
-              >
-                <t.icon className="h-4 w-4" /> {t.label}
-              </Link>
-            );
-          })}
-          <button
-            onClick={signOut}
-            aria-label="Sair"
-            className="ml-2 flex items-center rounded-xl px-3 py-2 text-slate-400 transition-colors hover:text-red-500"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </nav>
-      </div>
+      <nav className="flex items-center gap-1">
+        {studentTabs.map((t) => {
+          const active = isActive(t.href);
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              aria-current={active ? "page" : undefined}
+              className={`flex h-10 items-center gap-2 rounded-xl px-4 text-sm transition-colors ${
+                active
+                  ? "bg-[var(--mv-brand-100)] font-semibold text-[var(--mv-brand-700)]"
+                  : "text-[var(--mv-text-soft)] hover:bg-[var(--mv-brand-50)] hover:text-[var(--mv-text)]"
+              }`}
+            >
+              <t.icon className="h-4 w-4" /> {t.label}
+            </Link>
+          );
+        })}
+        <span className="mx-1 h-6 w-px bg-[var(--mv-line)]" />
+        <ThemeToggle className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--mv-text-soft)] transition-colors hover:bg-[var(--mv-brand-50)] hover:text-[var(--mv-text)]" />
+        <button
+          onClick={signOut}
+          aria-label="Sair"
+          title="Sair"
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--mv-text-soft)] transition-colors hover:bg-red-500/10 hover:text-red-600"
+        >
+          <LogOut className="h-[18px] w-[18px]" />
+        </button>
+      </nav>
     </header>
   );
 }

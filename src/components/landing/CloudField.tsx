@@ -67,8 +67,14 @@ function sampleLogo(img: HTMLImageElement) {
   return out;
 }
 
-/** `ambient`: versão de fundo da página (sem o M, mais fraca, com holofote do cursor). */
-export function CloudField({ ambient = false }: { ambient?: boolean }) {
+/** `ambient`: versão de fundo (sem o M, mais fraca, com holofote do cursor). */
+export function CloudField({
+  ambient = false,
+  spotlight = true, // holofote azul do cursor (só no modo ambiente)
+}: {
+  ambient?: boolean;
+  spotlight?: boolean;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -98,9 +104,12 @@ export function CloudField({ ambient = false }: { ambient?: boolean }) {
       mask = new Float32Array(cols * rows);
       if (!logo) return;
       // O "M" grande, embaixo e centralizado, cortado pela borda como um pico
-      const size = w < 768 ? Math.min(h * 0.4, w * 0.8) : Math.min(h * 0.62, w * 0.45);
+      // Área alta e estreita (hero no celular): M maior em relação à largura;
+      // pode encostar atrás dos botões, mas fica inteiro acima da névoa
+      const tall = h > w * 1.6;
+      const size = tall ? Math.min(h * 0.4, w * 0.8) : Math.min(h * 0.62, w * 0.45);
       const left = w / 2 - size / 2;
-      const top = h * (w < 768 ? 0.77 : 0.56);
+      const top = h * (tall ? 0.6 : 0.56);
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const u = Math.floor(((c * step - left) / size) * SAMPLE);
@@ -117,7 +126,7 @@ export function CloudField({ ambient = false }: { ambient?: boolean }) {
       w = canvas.clientWidth;
       h = canvas.clientHeight;
       // O fundo ambiente é fraco e fica atrás de tudo: blocos maiores = menos custo
-      step = (w < 768 ? 8 : 10) * (ambient ? 1.4 : 1);
+      step = (w < 640 ? 8 : 10) * (ambient ? 1.4 : 1);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -128,6 +137,11 @@ export function CloudField({ ambient = false }: { ambient?: boolean }) {
     const draw = (now: number) => {
       const t = now / 1000;
       const cell = step * 0.62;
+      // Lido a cada quadro: acompanha a troca de tema claro/escuro sem remontar
+      const style = getComputedStyle(canvas);
+      const cloudColor = style.getPropertyValue("--mv-cloud").trim() || "#e7ecf5";
+      // intensidade do modo ambiente; quem usa pode subir via --mv-ambient-alpha (ex.: sidebar)
+      const ambientAlpha = parseFloat(style.getPropertyValue("--mv-ambient-alpha")) || 0.2;
       ctx.clearRect(0, 0, w, h);
 
       for (let i = 0; i < mask.length; i++) {
@@ -164,8 +178,8 @@ export function CloudField({ ambient = false }: { ambient?: boolean }) {
         if (cloud > 0.12 && (m < 0.08 || cloud > 0.4)) {
           // Nuvem: cinza, com raros blocos na cor da marca piscando
           const spark = hash(c, r) < 0.012 && Math.sin(t * 2 + hash(r, c) * 20) > 0.4;
-          ctx.fillStyle = spark ? brand : "#e7ecf5";
-          alpha = spark ? 0.9 : quant(cloud) * (ambient ? 0.2 : 0.55);
+          ctx.fillStyle = spark ? brand : cloudColor;
+          alpha = spark ? 0.9 : quant(cloud) * (ambient ? ambientAlpha : 0.55);
         } else if (m >= 0.08) {
           // Tons do relevo do logo viram níveis de brilho (dá forma ao M)
           ctx.fillStyle = brand;
@@ -209,7 +223,7 @@ export function CloudField({ ambient = false }: { ambient?: boolean }) {
     io.observe(canvas);
     resize();
     if (!reduced) {
-      if (ambient) window.addEventListener("pointermove", onPointer, { passive: true });
+      if (ambient && spotlight) window.addEventListener("pointermove", onPointer, { passive: true });
       raf = requestAnimationFrame(loop);
     }
 
@@ -219,7 +233,7 @@ export function CloudField({ ambient = false }: { ambient?: boolean }) {
       io.disconnect();
       window.removeEventListener("pointermove", onPointer);
     };
-  }, [ambient]);
+  }, [ambient, spotlight]);
 
   return <canvas ref={canvasRef} aria-hidden className="h-full w-full" />;
 }
