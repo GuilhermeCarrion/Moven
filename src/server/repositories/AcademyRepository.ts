@@ -22,6 +22,17 @@ export class AcademyReposistory {
       select: { id: true, cancelWindowHours: true },
     });
   }
+
+  async getSettings(id: string) {
+    return await prisma.academy.findUnique({
+      where: { id },
+      select: { cancelWindowHours: true },
+    });
+  }
+
+  async updateSettings(id: string, data: { cancelWindowHours: number }) {
+    return await prisma.academy.update({ where: { id }, data });
+  }
 }
 
 export type Actor = { type: ActorType; id?: string; note?: string | null };

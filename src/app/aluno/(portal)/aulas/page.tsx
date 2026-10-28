@@ -2,13 +2,16 @@
 
 import { ConfirmDialog } from "@/components/student/ConfirmDialog";
 import {
+  BookPreview,
   StudentClass,
   useAppointmentAction,
   useBookClass,
+  useBookPreview,
   useStudentClasses,
 } from "@/hooks/useStudentClasses";
+import { useStudentCredits } from "@/hooks/useStudentCredits";
 import { apiError } from "@/lib/apiError";
-import { willRefund } from "@/lib/cancelWindow";
+import { cancelDeadline } from "@/lib/cancelWindow";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -35,6 +38,15 @@ const time = (iso: string) =>
   });
 const endTime = (iso: string, min: number) =>
   new Date(new Date(iso).getTime() + min * 60000).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const dayTime = (iso: string) =>
+  new Date(iso).toLocaleString("pt-BR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -77,24 +89,58 @@ export default function AulasPage() {
   };
 
   const { data, isLoading } = useStudentClasses(range);
+  const { data: credits } = useStudentCredits();
+  const windowH = credits?.cancelWindowHours ?? 4;
+  const preview = useBookPreview();
   const book = useBookClass();
   const action = useAppointmentAction();
+  // aula a reservar + reservas que podem ceder o crédito (release = a marcada)
+  const [displace, setDisplace] = useState<{
+    classId: string;
+    options: BookPreview["options"];
+    release: string;
+  } | null>(null);
 
   const dayClasses = (data ?? [])
     .filter((c) => sameDay(new Date(c.startAt), selected))
     .filter((c) => matchesFilter(c, filter))
     .sort((a, b) => +new Date(a.startAt) - +new Date(b.startAt));
 
-  const bookingId = book.isPending ? (book.variables as string) : null;
+  const bookingId = preview.isPending
+    ? preview.variables
+    : book.isPending
+      ? book.variables?.classSessionId
+      : null;
   const actingId = action.isPending
     ? (action.variables as { id: string }).id
     : null;
 
+  const doBook = (classSessionId: string, releaseAppointmentId?: string) =>
+    book.mutate(
+      { classSessionId, releaseAppointmentId },
+      {
+        onSuccess: () => toast.success("Aula reservada!"),
+        onError: (e) => toast.error(apiError(e)),
+      },
+    );
+
+  // Simula antes: sem crédito avisa; se tirar o crédito de outra, o aluno escolhe qual cede
   const onBook = (c: StudentClass) =>
-    book.mutate(c.id, {
-      onSuccess: () => toast.success("Aula agendada! 1 crédito usado."),
+    preview.mutate(c.id, {
+      onSuccess: (p) => {
+        if (!p.covered)
+          toast.error("Sem crédito para esta data. Renove seu pacote.");
+        else if (p.options.length)
+          setDisplace({
+            classId: c.id,
+            options: p.options,
+            release: p.options[0].id,
+          });
+        else doBook(c.id);
+      },
       onError: (e) => toast.error(apiError(e)),
     });
+
   const onAction = (id: string, act: "confirm" | "cancel") =>
     action.mutate(
       { id, action: act },
@@ -106,14 +152,6 @@ export default function AulasPage() {
         onError: (e) => toast.error(apiError(e)),
       },
     );
-
-  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
-
-  const requestCancel = (apptId: string, startAt: string) => {
-    if (willRefund(startAt))
-      onAction(apptId, "cancel"); // estorna -> cancela direto
-    else setConfirmCancel(apptId); // Sem estorno => avisa
-  };
 
   const monthLabel = selected.toLocaleDateString("pt-BR", {
     month: "long",
@@ -211,9 +249,14 @@ export default function AulasPage() {
         <div className="space-y-3">
           {dayClasses.map((c) => {
             const kind = cardKind(c);
+            const dl = cancelDeadline(c.startAt, windowH);
             const busy =
               bookingId === c.id ||
               (c.myAppointment && actingId === c.myAppointment.id);
+            function requestCancel(id: string, startAt: string): void {
+              throw new Error("Function not implemented.");
+            }
+
             return (
               <div
                 key={c.id}
@@ -229,6 +272,13 @@ export default function AulasPage() {
                     <div className="mt-1 text-xs font-medium text-cyan-700">
                       {c.booked}/{c.capacity} vagas
                     </div>
+                    {c.myAppointment && (
+                      <div className="mt-1 text-xs text-slate-500">
+                        {dl.open
+                          ? `Cancele sem custo até ${dl.label}`
+                          : "Crédito debitado"}
+                      </div>
+                    )}
                   </div>
                   {kind === "confirmed" && (
                     <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">
@@ -243,7 +293,7 @@ export default function AulasPage() {
                 </div>
 
                 {/* Ações por estado */}
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex gap-2 empty:hidden">
                   {kind === "available" && (
                     <button
                       disabled={!!busy}
@@ -262,23 +312,23 @@ export default function AulasPage() {
                       >
                         Confirmar
                       </button>
-                      <button
-                        disabled={!!busy}
-                        onClick={() =>
-                          requestCancel(c.myAppointment!.id, c.startAt)
-                        }
-                        className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 disabled:opacity-60"
-                      >
-                        Cancelar
-                      </button>
+                      {dl.open && (
+                        <button
+                          disabled={!!busy}
+                          onClick={() =>
+                            onAction(c.myAppointment!.id, "cancel")
+                          }
+                          className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 disabled:opacity-60"
+                        >
+                          Cancelar
+                        </button>
+                      )}
                     </>
                   )}
-                  {kind === "confirmed" && (
+                  {kind === "confirmed" && dl.open && (
                     <button
                       disabled={!!busy}
-                      onClick={() =>
-                        requestCancel(c.myAppointment!.id, c.startAt)
-                      }
+                      onClick={() => onAction(c.myAppointment!.id, "cancel")}
                       className="flex-1 rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-600 disabled:opacity-60"
                     >
                       Cancelar
@@ -301,16 +351,41 @@ export default function AulasPage() {
         </div>
       )}
       <ConfirmDialog
-        open={!!confirmCancel}
-        title="Cancelar sem devolver o crédito?"
-        message="Faltam menos de 2 horas para a aula. Se cancelar agora, o crédito não será devolvido."
-        confirmLabel="Cancelar mesmo assim"
-        onCancel={() => setConfirmCancel(null)}
+        open={!!displace}
+        title="Essa aula usa o crédito de outra reserva"
+        message="Seu saldo não cobre as duas. Escolha qual reserva será cancelada:"
+        confirmLabel="Reservar e cancelar"
+        onCancel={() => setDisplace(null)}
         onConfirm={() => {
-          if (confirmCancel) onAction(confirmCancel, "cancel");
-          setConfirmCancel(null);
+          if (displace) doBook(displace.classId, displace.release);
+          setDisplace(null);
         }}
-      />
+      >
+        {displace && (
+          <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
+            {displace.options.map((o) => (
+              <label
+                key={o.id}
+                className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/70 bg-white/60 px-3 py-2.5 text-sm has-[:checked]:border-rose-300 has-[:checked]:bg-rose-50"
+              >
+                <input
+                  type="radio"
+                  name="release"
+                  checked={displace.release === o.id}
+                  onChange={() => setDisplace({ ...displace, release: o.id })}
+                  className="accent-rose-500"
+                />
+                <span className="font-medium text-slate-700">
+                  {o.className}
+                </span>
+                <span className="ml-auto capitalize text-slate-500">
+                  {dayTime(o.startAt)}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

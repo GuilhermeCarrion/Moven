@@ -32,8 +32,10 @@ export function useStudentClasses(range: { from: string; to: string }) {
 export function useBookClass() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (classSessionId: string) =>
-      apiPublic.post("/student/appointments", { classSessionId }),
+    mutationFn: (vars: {
+      classSessionId: string;
+      releaseAppointmentId?: string;
+    }) => apiPublic.post("/student/appointments", vars),
     onSuccess: () => {
       (qc.invalidateQueries({ queryKey: [KEY] }),
         qc.invalidateQueries({ queryKey: ["my-appointments"] }),
@@ -59,5 +61,22 @@ export function useAppointmentAction() {
         qc.invalidateQueries({ queryKey: ["student-credits"] }),
         qc.invalidateQueries({ queryKey: ["student-history"] }));
     },
+  });
+}
+
+export interface BookPreview {
+  covered: boolean;
+  options: { id: string; startAt: string; className: string }[];
+}
+
+//Simula a reserva sem gravar: cobertura + quais reservas podem ceder o crédito
+export function useBookPreview() {
+  return useMutation({
+    mutationFn: async (classSessionId: string) =>
+      (
+        await apiPublic.post<BookPreview>("/student/appointments/preview", {
+          classSessionId,
+        })
+      ).data,
   });
 }

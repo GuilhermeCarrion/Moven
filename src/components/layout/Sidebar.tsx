@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
+  Settings,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -35,6 +36,12 @@ const navItems = [
     href: "/usuarios",
     icon: ShieldCheck,
     roles: ["ADMIN", "GESTOR"],
+  },
+  {
+    label: "Configurações",
+    href: "/configuracoes",
+    icon: Settings,
+    role: ["ADMIN", "GESTOR"],
   },
 ];
 

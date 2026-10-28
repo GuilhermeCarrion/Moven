@@ -1,9 +1,11 @@
 import { AppError } from "@/lib/errors";
 import { StudentRepository } from "../repositories/StudentRepository";
-import { StudentPackageRepository } from "../repositories/StudentPackageRepository";
+import { CreditService } from "./CreditService";
+import { AcademyReposistory } from "../repositories/AcademyRepository";
 
 const studentRepository = new StudentRepository();
-const studentPackageRepository = new StudentPackageRepository();
+const creditService = new CreditService();
+const academies = new AcademyReposistory();
 
 export class StudentProfileRepository {
   async get(studentId: string, academyId: string) {
@@ -33,11 +35,21 @@ export class StudentProfileRepository {
   }
 
   async getCredits(studentId: string, academyId: string) {
-    const credits = await studentPackageRepository.sumActiveCredits(
-      studentId,
-      academyId,
-    );
-    return { credits };
+    const [{ pkgs, reservations, covered }, settings] = await Promise.all([
+      creditService.snapshot(studentId, academyId),
+      academies.getSettings(academyId),
+    ]);
+
+    const balance = pkgs.reduce((sum, p) => sum + p.creditsRemaining, 0);
+
+    return {
+      balance, // creditos ainda não debitados
+      reserved: reservations.length,
+      free: balance - covered.size, // o que sobra pra reservar
+      coveredUntil:
+        reservations.filter((r) => covered.has(r.id)).at(-1)?.startAt ?? null,
+      cancelWindowHours: settings?.cancelWindowHours ?? 4,
+    };
   }
 
   async updateOwnProfile(

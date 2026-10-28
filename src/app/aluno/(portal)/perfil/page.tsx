@@ -14,6 +14,7 @@ import {
 } from "@/schemas/studentProfile.schema";
 import { apiError } from "@/lib/apiError";
 import { LogOut, User, Package, Pencil } from "lucide-react";
+import { RecurrenceCard } from "@/components/student/RecurrenceCard";
 
 const fieldWrap =
   "flex items-center gap-2 rounded-xl border border-white/70 bg-white/50 px-3.5 py-3 transition-colors focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/25";
@@ -106,6 +107,8 @@ export default function PerfilPage() {
             </p>
           )}
         </div>
+
+        <RecurrenceCard className={`${card} lg:col-span-2`} />
 
         {/* Editável */}
         <form

@@ -30,7 +30,10 @@ export class AppointmentRepository {
         debitedAt: null,
         classSession: { startAt: { gt: new Date() } },
       },
-      select: { id: true, classSession: { select: { startAt: true } } },
+      select: {
+        id: true,
+        classSession: { select: { startAt: true, name: true } },
+      },
       orderBy: { classSession: { startAt: "asc" } },
     });
   }
@@ -145,6 +148,29 @@ export class AppointmentRepository {
         classSession: { startAt: { gt: new Date(), lte: until } },
       },
       select: { id: true, studentId: true },
+    });
+  }
+
+  // Tudo que o aluno já teve nessas aulas (qualquer status): o gerador decide pelo motivo do cancelamento
+  async listByStudentInSessions(studentId: string, classSessionIds: string[]) {
+    if (classSessionIds.length === 0) return [];
+    return await prisma.appointment.findMany({
+      where: { studentId, classSessionId: { in: classSessionIds } },
+      select: { classSessionId: true, status: true, cancelReason: true },
+    });
+  }
+
+  // Reservas futuras, ainda não debitadas, criadas por estas recorrências
+  async listPendingByRecurrences(recurrenceIds: string[]) {
+    if (recurrenceIds.length === 0) return [];
+    return await prisma.appointment.findMany({
+      where: {
+        recurrenceId: { in: recurrenceIds },
+        status: { in: [AppointmentStatus.BOOKED, AppointmentStatus.CONFIRMED] },
+        debitedAt: null,
+        classSession: { startAt: { gt: new Date() } },
+      },
+      select: { id: true },
     });
   }
 

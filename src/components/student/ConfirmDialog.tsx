@@ -12,6 +12,7 @@ export function ConfirmDialog({
   cancelLabel = "Voltar",
   onConfirm,
   onCancel,
+  children,
 }: {
   open: boolean;
   title: string;
@@ -20,6 +21,7 @@ export function ConfirmDialog({
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: React.ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -39,6 +41,7 @@ export function ConfirmDialog({
           {title}
         </h3>
         <p className="mt-2 text-center text-sm text-slate-500">{message}</p>
+        {children}
         <div className="mt-6 flex gap-2">
           <button
             onClick={onCancel}

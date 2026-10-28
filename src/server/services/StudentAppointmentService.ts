@@ -3,11 +3,21 @@ import { AppointmentRepository } from "../repositories/AppointmentRepository";
 import { ClassSessionService } from "./ClassSessionService";
 import { AppointmentService } from "./AppointmentService";
 import { AppointmentEventRepository } from "../repositories/AppointmentEventRepository";
+import { CreditService } from "./CreditService";
+import { ClassSessionRepository } from "../repositories/ClassSessionRepository";
+import { RecurrenceService } from "./RecurrenceService";
+import { RecurrenceRepository } from "../repositories/RecurrenceRepository";
+import { ScheduleRepository } from "../repositories/ScheduleRepository";
 
 const appointmentRepository = new AppointmentRepository();
 const classSessionService = new ClassSessionService();
 const appointmentService = new AppointmentService();
 const eventRepository = new AppointmentEventRepository();
+const sessionRepository = new ClassSessionRepository();
+const credits = new CreditService();
+const recurrenceService = new RecurrenceService();
+const recurrenceRepository = new RecurrenceRepository();
+const scheduleRepository = new ScheduleRepository();
 
 export class StudentAppointmentService {
   async listDay(studentId: string, academyId: string, from?: Date, to?: Date) {
@@ -125,6 +135,63 @@ export class StudentAppointmentService {
           createdAt: e.createdAt,
         })),
       };
+    });
+  }
+
+  // Antes de reservar: a aula fica coberta? Se tirar a cobertura de outra, quais o aluno pode liberar
+  async preview(studentId: string, academyId: string, classSessionId: string) {
+    const session = await sessionRepository.findById(classSessionId, academyId);
+    if (!session) throw new AppError("Aula não encontrada", 404);
+
+    const check = await credits.checkNewReservation(
+      studentId,
+      academyId,
+      session.startAt,
+    );
+    if (!check.covered || !check.displaced.length)
+      return { covered: check.covered, options: [] };
+
+    // Qualquer reserva pendente libera um crédito a mais distante vem primeiro (é a sugestão)
+    const pending = await appointmentRepository.listPendingByStudent(
+      studentId,
+      academyId,
+    );
+    return {
+      covered: true,
+      options: pending
+        .map((p) => ({
+          id: p.id,
+          startAt: p.classSession.startAt,
+          className: p.classSession.name,
+        }))
+        .reverse(),
+    };
+  }
+
+  // Grade da academia (pra escolher) + os horarios fixos do aluno
+  async getRecurrence(studentId: string, academyId: string) {
+    const [slots, mine] = await Promise.all([
+      scheduleRepository.listSlots(academyId),
+      recurrenceRepository.listActiveByStudent(studentId, academyId),
+    ]);
+    return {
+      slots: slots
+        .filter((s) => s.active)
+        .map((s) => ({
+          id: s.id,
+          weekday: s.weekday,
+          time: s.time,
+          name: s.template.name,
+          professor: s.professor.name,
+        })),
+      mine: mine.map((r) => r.scheduleSlotId),
+    };
+  }
+
+  async setRecurrence(studentId: string, academyId: string, slotIds: string[]) {
+    await recurrenceService.setStudentSlots(studentId, academyId, slotIds, {
+      type: "STUDENT",
+      id: studentId,
     });
   }
 

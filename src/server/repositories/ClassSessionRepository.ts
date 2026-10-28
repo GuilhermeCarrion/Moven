@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ClassSessionSchema } from "@/schemas/classSession.schema";
-import { AppointmentStatus } from "@prisma/client";
+import { AppointmentStatus, Prisma } from "@prisma/client";
 
 export class ClassSessionRepository {
   async create(data: ClassSessionSchema & { academyId: string }) {
@@ -63,6 +63,29 @@ export class ClassSessionRepository {
     return await prisma.classSession.findMany({
       where: { id: { in: ids }, academyId },
       select: { id: true, name: true, startAt: true, durationMin: true },
+    });
+  }
+
+  // Aula que já existe no horario (inclusive cancelada) é ignorada: o @@unique decide
+  async createManyIngoringExisting(data: Prisma.ClassSessionCreateManyInput[]) {
+    return await prisma.classSession.createMany({ data, skipDuplicates: true });
+  }
+
+  async listBySlots(
+    academyId: string,
+    slotIds: string[],
+    from: Date,
+    to: Date,
+  ) {
+    return await prisma.classSession.findMany({
+      where: {
+        academyId,
+        status: "OPEN",
+        scheduleSlotId: { in: slotIds },
+        startAt: { gt: from, lte: to },
+      },
+      select: { id: true, startAt: true, scheduleSlotId: true },
+      orderBy: { startAt: "asc" },
     });
   }
 

@@ -10,8 +10,8 @@ import {
 } from "@/hooks/useStudentHistory";
 import { useAppointmentAction } from "@/hooks/useStudentClasses";
 import { apiError } from "@/lib/apiError";
-import { willRefund } from "@/lib/cancelWindow";
-import { ConfirmDialog } from "@/components/student/ConfirmDialog";
+import { cancelDeadline } from "@/lib/cancelWindow";
+import { useStudentCredits } from "@/hooks/useStudentCredits";
 
 const time = (iso: string) =>
   new Date(iso).toLocaleTimeString("pt-BR", {
@@ -90,7 +90,13 @@ function eventLabel(e: HistoryEvent): string {
     case "CONFIRMED":
       return "Confirmou presença";
     case "CANCELLED":
-      return `Cancelou · ${e.creditRefunded ? "crédito devolvido" : "sem devolução"}`;
+      return `Cancelada · ${
+        e.creditRefunded === null
+          ? "sem custo"
+          : e.creditRefunded
+            ? "crédito devolvido"
+            : "crédito não devolvido"
+      }`;
     case "RESCHEDULED":
       return "Remarcou";
     case "PRESENT":
@@ -200,7 +206,8 @@ function Card({
 export default function MinhasAulasPage() {
   const { data, isLoading } = useStudentHistory();
   const action = useAppointmentAction();
-  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
+  const { data: credits } = useStudentCredits();
+  const windowH = credits?.cancelWindowHours ?? 4;
   const now = Date.now();
 
   const actingId = action.isPending
@@ -217,8 +224,6 @@ export default function MinhasAulasPage() {
         onError: (e) => toast.error(apiError(e)),
       },
     );
-  const requestCancel = (id: string, startAt: string) =>
-    willRefund(startAt) ? onAction(id, "cancel") : setConfirmCancel(id);
 
   const groups = data ?? [];
   const isUpcoming = (g: ClassHistory) =>
@@ -250,13 +255,19 @@ export default function MinhasAulasPage() {
               upcoming.map((g) => {
                 const a = g.activeAppointment!;
                 const busy = actingId === a.id;
+                const dl = cancelDeadline(g.startAt, windowH);
                 return (
                   <Card
                     key={g.classSessionId}
                     g={g}
                     headline={futureHeadline(a)}
                   >
-                    <div className="flex gap-2 px-4 pb-4">
+                    <p className="px-4 pb-3 text-xs text-slate-500">
+                      {dl.open
+                        ? `Cancele sem custo até ${dl.label}`
+                        : "Crédito debitado · cancelamento encerrado"}
+                    </p>
+                    <div className="flex gap-2 px-4 pb-4 empty:hidden">
                       {a.status === "BOOKED" && (
                         <button
                           disabled={busy}
@@ -266,13 +277,15 @@ export default function MinhasAulasPage() {
                           Confirmar
                         </button>
                       )}
-                      <button
-                        disabled={busy}
-                        onClick={() => requestCancel(a.id, g.startAt)}
-                        className="flex-1 rounded-xl border border-rose-200 bg-white/70 py-2.5 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-60"
-                      >
-                        Cancelar
-                      </button>
+                      {dl.open && (
+                        <button
+                          disabled={busy}
+                          onClick={() => onAction(a.id, "cancel")}
+                          className="flex-1 rounded-xl border border-rose-200 bg-white/70 py-2.5 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:opacity-60"
+                        >
+                          Cancelar
+                        </button>
+                      )}
                     </div>
                   </Card>
                 );
@@ -296,18 +309,6 @@ export default function MinhasAulasPage() {
           </section>
         </>
       )}
-
-      <ConfirmDialog
-        open={!!confirmCancel}
-        title="Cancelar sem devolver o crédito?"
-        message="Faltam menos de 2 horas para a aula. Se cancelar agora, o crédito não será devolvido."
-        confirmLabel="Cancelar mesmo assim"
-        onCancel={() => setConfirmCancel(null)}
-        onConfirm={() => {
-          if (confirmCancel) onAction(confirmCancel, "cancel");
-          setConfirmCancel(null);
-        }}
-      />
     </div>
   );
 }

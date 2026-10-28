@@ -4,6 +4,7 @@ import { AppError, handleError } from "@/lib/errors";
 import {
   studentApptActionSchema,
   studentBookSchema,
+  studentRecurrenceSchema,
 } from "@/schemas/studentAppointment.schema";
 
 const service = new StudentAppointmentService();
@@ -33,9 +34,9 @@ export class StudentAppointmentController {
     }
   }
 
-  async history(studetnId: string, academyId: string) {
+  async history(studentId: string, academyId: string) {
     try {
-      const result = await service.history(studetnId, academyId);
+      const result = await service.history(studentId, academyId);
       return NextResponse.json(result, { status: 200 });
     } catch (error) {
       return handleError(error);
@@ -80,6 +81,51 @@ export class StudentAppointmentController {
           : await service.cancel(studentId, academyId, id);
 
       return NextResponse.json(result, { status: 201 });
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  async preview(req: Request, studentId: string, academyId: string) {
+    try {
+      const parsed = studentBookSchema.safeParse(await req.json());
+      if (!parsed.success)
+        throw new AppError(
+          "Dados inválidos: " + parsed.error.issues[0].message,
+          400,
+        );
+      const result = await service.preview(
+        studentId,
+        academyId,
+        parsed.data.classSessionId,
+      );
+      return NextResponse.json(result, { status: 200 });
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  async getRecurrence(studentId: string, academyId: string) {
+    try {
+      return NextResponse.json(
+        await service.getRecurrence(studentId, academyId),
+        { status: 200 },
+      );
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+
+  async setRecurrence(req: Request, studentId: string, academyId: string) {
+    try {
+      const parsed = studentRecurrenceSchema.safeParse(await req.json());
+      if (!parsed.success)
+        throw new AppError(
+          "Dados inválidos: " + parsed.error.issues[0].message,
+          400,
+        );
+      await service.setRecurrence(studentId, academyId, parsed.data.slotIds);
+      return NextResponse.json({ ok: true }, { status: 200 });
     } catch (error) {
       return handleError(error);
     }

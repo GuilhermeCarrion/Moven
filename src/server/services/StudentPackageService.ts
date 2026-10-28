@@ -5,11 +5,13 @@ import { StudentRepository } from "../repositories/StudentRepository";
 import { AppError } from "@/lib/errors";
 import { JobType, StudentPackageStatus } from "@prisma/client";
 import { JobService } from "./JobService";
+import { RecurrenceService } from "./RecurrenceService";
 
 const repository = new StudentPackageRepository();
 const planRepository = new PlanRepository();
 const studentRepository = new StudentRepository();
 const jobService = new JobService();
+const recurrenceService = new RecurrenceService();
 
 const PLAN_EXPIRY_WARN_DAYS = 3;
 
@@ -70,6 +72,13 @@ export class StudentPackageService {
       } catch (e) {
         console.error("Falha ao infileirar aviso de vencimento: ", e);
       }
+    }
+
+    // Renovação: preenche na hora as datas da recorrência que passaram a ter cobertura
+    try {
+      await recurrenceService.generateForStudent(data.studentId, academyId);
+    } catch (e) {
+      console.error("[recorrencia] falha ao gerar após atribuir pacote:", e);
     }
 
     return pkg;
