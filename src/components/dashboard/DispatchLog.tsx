@@ -1,8 +1,6 @@
 import { CheckCheck, CircleAlert, Clock } from "lucide-react";
 import { DashCard } from "./DashCard";
-import { dashboardMock, type DispatchStatus, type JobType } from "./mock";
-
-type Dispatch = (typeof dashboardMock.dispatches)[number];
+import type { DashboardDispatch as Dispatch, DispatchStatus, JobType } from "./types";
 
 const typeLabel: Record<JobType, string> = {
   PRESENCE_CONFIRMATION: "Confirmação de presença",
@@ -26,6 +24,9 @@ function statusText(d: Dispatch) {
 export function DispatchLog({ dispatches, className }: { dispatches: Dispatch[]; className?: string }) {
   return (
     <DashCard title="Últimos disparos" subtitle="Mensagens automáticas do WhatsApp" className={className}>
+      {dispatches.length === 0 && (
+        <p className="py-6 text-center text-sm text-[var(--mv-text-soft)]">Nenhum disparo ainda.</p>
+      )}
       <ul className="-mx-1 divide-y divide-[var(--mv-line)]">
         {dispatches.map((d, i) => {
           const s = statusUi[d.status];

@@ -1,24 +1,27 @@
 import {
-  Bell,
+  Calendar,
   CalendarDays,
   Check,
   CheckCheck,
   ChevronLeft,
-  ChevronRight,
   ClipboardList,
   EllipsisVertical,
+  GraduationCap,
   House,
-  Inbox,
   LayoutDashboard,
+  MessageSquare,
   Mic,
   Phone,
-  Search,
+  Settings,
+  ShieldCheck,
   Smile,
-  TrendingUp,
   User,
   Users,
   Video,
 } from "lucide-react";
+import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
+import { CloudField } from "@/components/landing/CloudField";
+import { dashboardData } from "@/components/landing/dashboardData";
 
 /**
  * Telas fictícias do sistema para a landing. Dados inventados, mas seguindo
@@ -72,21 +75,86 @@ function Occupancy({ booked, capacity }: { booked: number; capacity: number }) {
 
 /* ───────────── Dashboard ───────────── */
 
-const kpis = [
-  { label: "Alunos ativos", value: "248", note: "+12 no mês" },
-  { label: "Aulas hoje", value: "14", note: "3 lotadas" },
-  { label: "Ocupação da semana", value: "87%", note: "+6 pts" },
-  { label: "Confirmados no WhatsApp", value: "93%", note: "sem ligar pra ninguém" },
+const sideItems = [
+  { icon: LayoutDashboard, label: "Início" },
+  { icon: Users, label: "Alunos" },
+  { icon: GraduationCap, label: "Professores" },
+  { icon: ClipboardList, label: "Planos" },
+  { icon: Calendar, label: "Agendamentos" },
+  { icon: MessageSquare, label: "Mensagens" },
+  { icon: ShieldCheck, label: "Usuários" },
+  { icon: Settings, label: "Configurações" },
 ];
 
-const week = [
-  { d: "Seg", v: 72 },
-  { d: "Ter", v: 91 },
-  { d: "Qua", v: 80 },
-  { d: "Qui", v: 96 },
-  { d: "Sex", v: 68 },
-  { d: "Sáb", v: 88 },
-];
+/**
+ * A tela de início do painel (o mesmo componente da /dashboard) com dados fictícios.
+ * `inert`: é vitrine, nada clica nem recebe foco. O zoom encaixa a tela real: largura de celular no
+ * celular (0.85) e o painel em tela cheia no desktop (0.8).
+ */
+export function DashboardMock() {
+  return (
+    <div
+      inert
+      className="mv-app mv-canvas flex max-h-[620px] overflow-hidden rounded-[22px] text-left [mask-image:linear-gradient(to_bottom,black_88%,transparent)] [zoom:0.85] lg:max-h-[600px] lg:[zoom:0.8]"
+    >
+      {/* Sidebar do painel, sem o rodapé do usuário (fica na parte cortada).
+          Sem backdrop-filter: no Chrome ele escapa da máscara do pai e a sidebar não some no degradê */}
+      <aside className="mv-glass m-3 mr-0 hidden w-64 flex-shrink-0 flex-col overflow-hidden rounded-[24px] [backdrop-filter:none] lg:flex">
+        <div className="flex h-[72px] items-center gap-3 px-4">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--mv-brand)] text-xs font-extrabold text-white shadow-[0_8px_18px_-8px_var(--mv-brand)]">
+            SR
+          </span>
+          <div>
+            <p className="text-[15px] font-bold">Studio Ritmo</p>
+            <p className="mv-mono text-[10px] uppercase tracking-[0.16em] text-[var(--mv-text-soft)]">
+              Painel
+            </p>
+          </div>
+        </div>
+        <div className="relative flex-1">
+          <div
+            aria-hidden
+            className="absolute inset-0 [mask-image:linear-gradient(to_top,black,transparent)]"
+            style={{ "--mv-ambient-alpha": 0.55 } as React.CSSProperties}
+          >
+            <CloudField ambient spotlight={false} />
+          </div>
+          <nav className="relative space-y-1 px-3 py-2">
+            <p className="mv-mono pb-1 pl-3 text-[10px] uppercase tracking-[0.18em] text-[var(--mv-text-soft)]">
+              Menu
+            </p>
+            {sideItems.map((it, i) => (
+              <div
+                key={it.label}
+                className={`relative flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] ${
+                  i === 0
+                    ? "bg-[var(--mv-brand-100)] font-semibold text-[var(--mv-brand-700)]"
+                    : "text-[var(--mv-text-soft)]"
+                }`}
+              >
+                {i === 0 && (
+                  <span className="absolute -left-3 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[var(--mv-brand)]" />
+                )}
+                <it.icon className="h-5 w-5" />
+                {it.label}
+              </div>
+            ))}
+          </nav>
+        </div>
+      </aside>
+
+      <div className="min-w-0 flex-1 p-3 sm:p-5">
+        <DashboardOverview
+          data={dashboardData}
+          nowMin={12 * 60 + 20}
+          greeting="Boa tarde,"
+          name="Renata"
+          dateLabel="quinta-feira, 22 de outubro"
+        />
+      </div>
+    </div>
+  );
+}
 
 const today = [
   { h: "07:00", name: "Funcional", prof: "Rafa", b: 12, c: 12 },
@@ -94,162 +162,6 @@ const today = [
   { h: "18:00", name: "Muay Thai", prof: "Diego", b: 15, c: 16 },
   { h: "19:00", name: "Dança", prof: "Júlia", b: 20, c: 20 },
 ];
-
-const feed = [
-  { who: "Ana Souza", what: "confirmou Dança · 19h", icon: "ok" },
-  { who: "João Lima", what: "cancelou · crédito devolvido", icon: "back" },
-  { who: "Bia Costa", what: "aviso: plano vence em 3 dias", icon: "bell" },
-];
-
-const sideItems = [
-  { icon: LayoutDashboard, label: "Início", active: true },
-  { icon: Users, label: "Alunos" },
-  { icon: CalendarDays, label: "Agenda" },
-  { icon: ClipboardList, label: "Planos" },
-  { icon: Inbox, label: "Mensagens", badge: 4 },
-];
-
-export function DashboardMock() {
-  return (
-    <div className="flex overflow-hidden rounded-[22px] bg-white text-left">
-      {/* Sidebar */}
-      <aside className="hidden w-48 flex-shrink-0 flex-col gap-1 border-r border-slate-200/70 bg-white/60 p-3 md:flex">
-        <div className="mb-3 flex items-center gap-2 px-2 py-1">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--mv-brand)] text-[10px] font-extrabold text-white">
-            SR
-          </span>
-          <span className="text-xs font-bold text-[var(--mv-ink)]">Studio Ritmo</span>
-        </div>
-        {sideItems.map((it) => (
-          <div
-            key={it.label}
-            className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11px] ${
-              it.active
-                ? "bg-[var(--mv-brand-100)] font-semibold text-[var(--mv-brand-700)]"
-                : "text-slate-500"
-            }`}
-          >
-            <it.icon className="h-3.5 w-3.5" />
-            {it.label}
-            {it.badge && (
-              <span className="ml-auto rounded-full bg-[var(--mv-accent)] px-1.5 text-[9px] font-bold text-white">
-                {it.badge}
-              </span>
-            )}
-          </div>
-        ))}
-      </aside>
-
-      <div className="min-w-0 flex-1 p-4 md:p-5">
-        {/* Topbar */}
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-              Quinta, 23 de outubro
-            </p>
-            <p className="text-sm font-bold text-[var(--mv-ink)] md:text-base">Bom dia, Carla</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] text-slate-400 sm:flex">
-              <Search className="h-3 w-3" /> Buscar aluno…
-            </div>
-            <span className="relative flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500">
-              <Bell className="h-3.5 w-3.5" />
-              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--mv-accent)]" />
-            </span>
-          </div>
-        </div>
-
-        {/* KPIs */}
-        <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-          {kpis.map((k, i) => (
-            <div
-              key={k.label}
-              className={`rounded-xl border p-3 ${
-                i === 3
-                  ? "border-transparent bg-[var(--mv-brand)] text-white"
-                  : "border-slate-200/70 bg-white"
-              }`}
-            >
-              <p className={`text-[10px] font-medium ${i === 3 ? "text-white/80" : "text-slate-500"}`}>
-                {k.label}
-              </p>
-              <p className={`mt-1 text-xl font-extrabold tabular-nums ${i === 3 ? "" : "text-[var(--mv-ink)]"}`}>
-                {k.value}
-              </p>
-              <p className={`mt-0.5 text-[9.5px] ${i === 3 ? "text-white/75" : "text-emerald-600"}`}>
-                {k.note}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-2.5 grid gap-2.5 lg:grid-cols-5">
-          {/* Agenda do dia */}
-          <div className="rounded-xl border border-slate-200/70 bg-white p-3 lg:col-span-3">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-[11px] font-bold text-[var(--mv-ink)]">Agenda de hoje</p>
-              <div className="flex gap-1 text-slate-400">
-                <ChevronLeft className="h-3.5 w-3.5" />
-                <ChevronRight className="h-3.5 w-3.5" />
-              </div>
-            </div>
-            <div className="divide-y divide-slate-100">
-              {today.map((c) => (
-                <div key={c.h} className="flex items-center gap-3 py-2">
-                  <span className="w-9 text-[10px] font-bold tabular-nums text-slate-400">{c.h}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-semibold text-[var(--mv-ink)]">{c.name}</p>
-                    <p className="text-[9.5px] text-slate-400">Prof. {c.prof}</p>
-                  </div>
-                  <Occupancy booked={c.b} capacity={c.c} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Ocupação semanal + feed */}
-          <div className="grid gap-2.5 lg:col-span-2">
-            <div className="rounded-xl border border-slate-200/70 bg-white p-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-bold text-[var(--mv-ink)]">Ocupação</p>
-                <span className="flex items-center gap-1 text-[9.5px] font-semibold text-emerald-600">
-                  <TrendingUp className="h-3 w-3" /> semana
-                </span>
-              </div>
-              <div className="mt-2 flex h-16 items-end gap-1.5">
-                {week.map((d) => (
-                  <div key={d.d} className="flex flex-1 flex-col items-center gap-1">
-                    <div
-                      className="w-full rounded-md"
-                      style={{
-                        height: `${d.v * 0.55}px`,
-                        background: d.v >= 90 ? "var(--mv-brand)" : "var(--mv-brand-200)",
-                      }}
-                    />
-                    <span className="text-[8.5px] text-slate-400">{d.d}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200/70 bg-white p-3">
-              <p className="mb-1.5 text-[11px] font-bold text-[var(--mv-ink)]">WhatsApp agora</p>
-              {feed.map((f, i) => (
-                <div key={f.who} className="flex items-center gap-2 py-1">
-                  <Avatar name={f.who} i={i} size={20} />
-                  <p className="min-w-0 flex-1 truncate text-[10px] text-slate-500">
-                    <b className="font-semibold text-[var(--mv-ink)]">{f.who.split(" ")[0]}</b> {f.what}
-                  </p>
-                  {f.icon === "ok" && <CheckCheck className="h-3 w-3 text-sky-500" />}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ───────────── Celular + WhatsApp ───────────── */
 

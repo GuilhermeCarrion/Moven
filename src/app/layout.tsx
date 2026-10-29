@@ -18,8 +18,11 @@ const themedRoutes = [
   "/mensagens",
   "/usuarios",
   "/perfil",
+  "/configuracoes",
   "/aluno/login",
   "/aluno/aulas",
+  "/aluno/minhas-aulas",
+  "/aluno/perfil",
 ];
 
 export default function RootLayout({

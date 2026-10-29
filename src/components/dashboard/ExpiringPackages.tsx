@@ -2,9 +2,7 @@ import { Ban, ChevronRight, CircleAlert, Clock } from "lucide-react";
 import Link from "next/link";
 import { initials } from "@/components/layout/Sidebar";
 import { DashCard } from "./DashCard";
-import { dashboardMock } from "./mock";
-
-type Pkg = (typeof dashboardMock.packages)[number];
+import type { DashboardPackage as Pkg } from "./types";
 
 // Cor + ícone + texto: o estado nunca depende só da cor
 function status(p: Pkg) {
@@ -42,6 +40,11 @@ export function ExpiringPackages({ packages, className }: { packages: Pkg[]; cla
       subtitle={`${counts.expired ?? 0} vencidos · ${counts.depleted ?? 0} sem créditos · ${counts.expiring ?? 0} vencendo`}
       className={className}
     >
+      {packages.length === 0 && (
+        <p className="py-6 text-center text-sm text-[var(--mv-text-soft)]">
+          Nenhum pacote pedindo atenção.
+        </p>
+      )}
       <ul className="-mx-1 divide-y divide-[var(--mv-line)]">
         {packages.map((p) => {
           const s = status(p);

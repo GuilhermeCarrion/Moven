@@ -118,17 +118,28 @@ Os derivados se recalculam sozinhos. Landing e login usam sempre o azul Moven.
   Sem degradê nem brilho no traço (testado e descartado).
 - Listas: tabela só a partir de `xl` (1280px); abaixo disso, lista em cards (ver `src/app/(painel)/alunos/page.tsx`).
 - Ações por linha: botões-ícone de 40px com `aria-label`; a ação principal da linha leva o tom claro da marca.
-- Telas já no padrão (com tema escuro liberado): `/login`, `/dashboard`, `/alunos`, `/professores`, `/planos`, `/agendamentos`, `/mensagens`, `/usuarios`, `/perfil`.
+- Telas já no padrão (com tema escuro liberado): `/login`, `/dashboard`, `/alunos`, `/professores`, `/planos`, `/agendamentos`, `/mensagens`, `/usuarios`, `/perfil`, `/configuracoes`.
+- Configurações: prazo e templates numa coluna (380px), grade semanal ao lado. Cada horário é uma linha
+  em `brand-50` (desativado = tracejado e apagado); no celular, horário + botão em cima e os selects embaixo.
 - Portal do aluno (foco no celular): `/aluno/login` segue o login do painel com o texto do aluno ("Sua próxima
   aula *começa aqui.*"). Painel de marca mais baixo no celular (40svh, 250px em telas baixas) para o "Entrar"
   caber sem rolar até no iPhone SE. CPF com máscara e pulo automático para a data; data digitada (DD/MM/AAAA,
   teclado numérico) em vez do seletor nativo. Máscaras em `src/lib/format.ts` (`maskCpf`, `maskDate`).
   O form guarda o valor **antes** da máscara (colar/autocompletar chega sem barras): o schema reaplica a máscara.
 - Portal por dentro: `.mv-app mv-canvas`, barra flutuante de vidro no celular (3 abas, ícones 22px) e barra de
-  vidro no topo no desktop (com tema e sair). Cabeçalho = saudação com o nome na cor da marca + **créditos em
-  ingresso** (bloco sólido da marca; âmbar quando zera). Aulas: semana em faixa (dia escolhido sólido, hoje com
+  vidro no topo no desktop (com tema e sair) que mostra a **academia** (iniciais + nome + "Portal do aluno", via
+  `GET /api/public/academies/{id}`), como o topo da sidebar do painel. Cabeçalho = saudação com o nome na cor da
+  marca + **anel de créditos** (64px, menor que a saudação): número de livres no centro, arco = livres (marca),
+  trilho = reservadas (marca a 35%); âmbar sem crédito livre. Legenda com bolinhas só quando há reserva ou falta
+  crédito. No celular, a academia aparece no topo com o ícone da Moven (`useStudentAcademy`). Cartão de
+  créditos grande e ingresso: testados e descartados. Aulas: semana em faixa (dia escolhido sólido, hoje com
   anel, pontinho por aula), filtro segmentado e a mesma linha do tempo da agenda do painel, com botões de 48px
   ("Agendar · 1 crédito", "Confirmar", "Cancelar"). Aviso de cancelamento: gaveta com botões empilhados no celular.
+- Minhas aulas: abas Próximas / Histórico; cada aula com bloco de data (sólido nas próximas, claro no histórico),
+  status em chip e, ao tocar, a linha do tempo de eventos (fundo cinza neutro, como o card aberto da agenda).
+- Perfil do aluno: pacote como **carteirinha** (cartão na cor da marca com créditos e validade), agenda fixa em
+  botões de 44px, "Meus dados", dados do cadastro (só leitura) e **Aparência** com o botão de tema (o celular não
+  tem sidebar). Nascimento é só data: formatar com `timeZone: "UTC"`.
 - Gaveta "Mais" do celular (`src/components/layout/BottomNav.tsx`): a sidebar do celular. Vidro, abre logo
   acima da barra (que continua visível; "Mais" vira "Fechar"), rótulo MENU + botão de tema, opções em blocos
   de 3 por linha (nova opção = mais um item em `extra`), nuvens subindo e o cartão do usuário embaixo.
@@ -159,11 +170,18 @@ Os derivados se recalculam sozinhos. Landing e login usam sempre o azul Moven.
 - Comentário **na mesma linha** de uma variável CSS (`--x: #fff; /* ... */`) faz a variável sumir:
   comente na linha de cima.
 - Fonte que precisa vencer o `* { font-family: Inter !important }` vai dentro do `@layer base`.
+- `mask-image` num pai não apaga filho com `backdrop-filter` (`mv-glass`) no Chrome: o vidro fica por
+  cima do degradê. Dentro de área com máscara, use `[backdrop-filter:none]` no filho.
 
 ## Arquivos de referência
 
-- Dashboard: `src/app/(painel)/dashboard/page.tsx` (dados em `src/components/dashboard/mock.ts`,
-  formato esperado do futuro `GET /api/dashboard`)
+- Dashboard: a tela inteira é `src/components/dashboard/DashboardOverview.tsx`, usada pelo painel
+  (`src/app/(painel)/dashboard/page.tsx`, ainda zerado até ligar o `GET /api/dashboard`) e pela prévia
+  da landing (`DashboardMock` em `src/components/landing/mocks.tsx`, com os dados fictícios de
+  `src/components/landing/dashboardData.ts`). O formato dos dados está em `src/components/dashboard/types.ts`.
+  Mudou a dashboard, a landing acompanha sozinha. A prévia é `inert` (sem clique/foco) e usa `zoom`
+  (0.85 no celular, 0.8 no desktop) para caber como um "print" do painel. Fica cortada (saudação,
+  totalizadores e o topo dos cards) com um degradê curto na base.
 
 - Login: `src/app/login/page.tsx`, `src/components/forms/LoginForm.tsx`
 - Tokens, vidro e fontes: `src/app/globals.css`

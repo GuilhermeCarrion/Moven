@@ -1,11 +1,9 @@
 import { CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { DashCard } from "./DashCard";
-import { dashboardMock } from "./mock";
+import type { DashboardClass } from "./types";
 
-type Klass = (typeof dashboardMock.today)[number];
-
-export function TodayClasses({ classes, className }: { classes: readonly Klass[]; className?: string }) {
+export function TodayClasses({ classes, className }: { classes: DashboardClass[]; className?: string }) {
   return (
     <DashCard
       title="Aulas de hoje"
@@ -20,6 +18,9 @@ export function TodayClasses({ classes, className }: { classes: readonly Klass[]
       }
       className={className}
     >
+      {classes.length === 0 && (
+        <p className="py-6 text-center text-sm text-[var(--mv-text-soft)]">Nenhuma aula hoje.</p>
+      )}
       <ul className="-mx-1 divide-y divide-[var(--mv-line)]">
         {classes.map((c) => {
           const full = c.booked >= c.capacity;
@@ -41,10 +42,13 @@ export function TodayClasses({ classes, className }: { classes: readonly Klass[]
                     </span>
                   )}
                 </p>
-                <p className="flex items-center gap-1.5 text-sm text-[var(--mv-text-soft)]">
-                  Prof. {c.professor} ·
-                  <CheckCheck className="h-3.5 w-3.5 text-sky-500" aria-hidden />
-                  {c.confirmed} confirmaram
+                {/* coluna estreita: os dois trechos descem inteiros, sem quebrar palavra a palavra */}
+                <p className="flex flex-wrap items-center gap-x-2 text-sm text-[var(--mv-text-soft)]">
+                  <span className="whitespace-nowrap">Prof. {c.professor}</span>
+                  <span className="flex items-center gap-1 whitespace-nowrap">
+                    <CheckCheck className="h-3.5 w-3.5 text-sky-500" aria-hidden />
+                    {c.confirmed} confirmaram
+                  </span>
                 </p>
               </div>
               <div className="w-20 flex-shrink-0 text-right">
