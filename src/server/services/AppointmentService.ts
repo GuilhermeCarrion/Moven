@@ -387,7 +387,7 @@ export class AppointmentService {
       academyId,
       actor,
       CancelReason.CREDIT_USED,
-      `Crédito usado na aula dde ${formatClassTime(newStartAt)}`,
+      `Crédito usado na aula de ${formatClassTime(newStartAt)}`,
     );
   }
 }

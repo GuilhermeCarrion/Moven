@@ -9,7 +9,7 @@ export const professorSchema = z.object({
   cpf: z
     .string()
     .trim()
-    .regex(/^\d{11}$/, "CPF deve conter 11 dígitos numériocos"),
+    .regex(/^\d{11}$/, "CPF deve conter 11 dígitos numéricos"),
 });
 
 export type ProfessorSchema = z.infer<typeof professorSchema>;

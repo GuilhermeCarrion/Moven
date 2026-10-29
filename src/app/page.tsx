@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   Activity,
@@ -21,6 +20,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { CloudField } from "@/components/landing/CloudField";
+import { MovenLogo } from "@/components/layout/MovenLogo";
 import { Reveal } from "@/components/landing/Reveal";
 import { ThemePreview } from "@/components/landing/ThemePreview";
 import {
@@ -117,20 +117,6 @@ const plans = [
   },
 ];
 
-function Logo({ light = false }: { light?: boolean }) {
-  return (
-    <span className="flex items-center gap-2.5">
-      <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5">
-        <Image src="/MovenLogo.png" alt="" width={36} height={36} className="scale-[1.35]" />
-      </span>
-      <span
-        className={`text-xl font-extrabold tracking-tight ${light ? "text-white" : "text-[var(--mv-ink)]"}`}
-      >
-        Moven
-      </span>
-    </span>
-  );
-}
 
 function SectionTitle({
   eyebrow,
@@ -172,7 +158,7 @@ export default function LandingPage() {
           <header className="sticky top-0 z-50 px-4 pt-3">
             <nav className="mv-glass mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl py-2 pl-3 pr-2">
               <Link href="/" aria-label="Moven — início">
-                <Logo light />
+                <MovenLogo />
               </Link>
               <div className="hidden items-center gap-1 md:flex">
                 {navLinks.map((l) => (

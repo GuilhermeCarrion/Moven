@@ -20,10 +20,10 @@ const statusLabel: Record<StudentPackageStatus, string> = {
 };
 
 const statusColor: Record<StudentPackageStatus, string> = {
-  ACTIVE: "bg-cyan-100 text-cyan-800",
-  EXPIRED: "bg-muted text-muted-foreground",
-  DEPLETED: "bg-highlight/20 text-highlight-foreground",
-  CANCELLED: "bg-destructive/10 text-destructive",
+  ACTIVE: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  EXPIRED: "bg-red-500/10 text-red-700 dark:text-red-300",
+  DEPLETED: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
+  CANCELLED: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
 };
 
 export function StudentPackages({
@@ -55,11 +55,9 @@ export function StudentPackages({
 
   return (
     <div className="space-y-5">
-      {isLoading && (
-        <p className="text-sm text-muted-foreground">Carregando...</p>
-      )}
+      {isLoading && <p className="text-sm text-[var(--mv-text-soft)]">Carregando...</p>}
       {!isLoading && packages?.length === 0 && (
-        <p className="text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-[var(--mv-line)] p-4 text-center text-sm text-[var(--mv-text-soft)]">
           Nenhum pacote registrado.
         </p>
       )}
@@ -67,30 +65,35 @@ export function StudentPackages({
       {!!packages?.length && (
         <ul className="space-y-2">
           {packages.map((pkg) => (
-            <li
-              key={pkg.id}
-              className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
-            >
-              <div>
-                <p className="font-medium text-foreground">
-                  {pkg.plan?.name ?? "Plano"}
-                </p>
-                <p className="text-muted-foreground">
-                  {pkg.creditsRemaining}/{pkg.creditsTotal} créditos · vence{" "}
-                  {new Date(pkg.expiresAt).toLocaleDateString("pt-BR")}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
+            <li key={pkg.id} className="rounded-2xl border border-[var(--mv-line)] p-3.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-[var(--mv-text)]">
+                    {pkg.plan?.name ?? "Plano"}
+                  </p>
+                  <p className="text-sm text-[var(--mv-text-soft)]">
+                    {pkg.creditsRemaining} de {pkg.creditsTotal} créditos · vence{" "}
+                    {new Date(pkg.expiresAt).toLocaleDateString("pt-BR")}
+                  </p>
+                </div>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[pkg.status]}`}
+                  className={`flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${statusColor[pkg.status]}`}
                 >
                   {statusLabel[pkg.status]}
                 </span>
+              </div>
+
+              <div className="mt-2.5 flex items-center gap-3">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--mv-brand-100)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--mv-brand)]"
+                    style={{ width: `${(pkg.creditsRemaining / pkg.creditsTotal) * 100}%` }}
+                  />
+                </div>
                 {pkg.status === "ACTIVE" && (
                   <Button
-                    variant="ghost"
-                    size="xs"
-                    className="text-destructive"
+                    variant="destructive"
+                    size="sm"
                     onClick={() =>
                       cancel.mutate(pkg.id, {
                         onSuccess: () => toast.success("Pacote cancelado"),
@@ -108,15 +111,19 @@ export function StudentPackages({
       )}
 
       {studentActive && (
-        <div className="flex items-end gap-2 border-t border-border pt-4">
-          <div className="flex-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Atribuir novo pacote
-            </label>
+        <div className="border-t border-[var(--mv-line)] pt-4">
+          <label
+            htmlFor="assign-plan"
+            className="mb-1.5 block text-sm font-medium text-[var(--mv-text)]"
+          >
+            Atribuir novo pacote
+          </label>
+          <div className="flex flex-col gap-2 sm:flex-row">
             <select
+              id="assign-plan"
               value={planId}
               onChange={(e) => setPlanId(e.target.value)}
-              className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm"
+              className="h-11 w-full min-w-0 flex-1 rounded-xl border border-[var(--mv-line)] bg-[var(--mv-field)] px-3 text-base text-[var(--mv-text)] outline-none focus-visible:border-[var(--mv-brand)] focus-visible:ring-4 focus-visible:ring-[var(--mv-brand)]/15"
             >
               <option value="">Selecione um plano...</option>
               {plans?.map((p) => (
@@ -125,14 +132,10 @@ export function StudentPackages({
                 </option>
               ))}
             </select>
+            <Button onClick={handleAssign} disabled={assign.isPending}>
+              {assign.isPending ? "Atribuindo..." : "Atribuir"}
+            </Button>
           </div>
-          <Button
-            onClick={handleAssign}
-            disabled={assign.isPending}
-            className="bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-focus)]"
-          >
-            Atribuir
-          </Button>
         </div>
       )}
     </div>

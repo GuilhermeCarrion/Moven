@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Button } from "../ui/button";
 
 /**
  * Schema "de formulários": os inputs entregam STRINGS, então coagimos p/ números
@@ -31,7 +30,7 @@ const formSchema = z.object({
   weightKg: z.coerce
     .number()
     .min(42, "Peso mínimo de 42 kg")
-    .max(107, "Peso mínimo de 107 kg"),
+    .max(107, "Peso máximo de 107 kg"),
 });
 
 type FormValues = z.input<typeof formSchema>;
@@ -39,14 +38,11 @@ type FormValues = z.input<typeof formSchema>;
 interface StudentFormProps {
   student?: Student;
   onSubmit: (data: Record<string, unknown>) => void;
-  isSubmitting: boolean;
+  // os botões ficam no rodapé do Modal e enviam este form via atributo `form={formId}`
+  formId?: string;
 }
 
-export function StudentForm({
-  student,
-  onSubmit,
-  isSubmitting,
-}: StudentFormProps) {
+export function StudentForm({ student, onSubmit, formId = "student-form" }: StudentFormProps) {
   const {
     register,
     handleSubmit,
@@ -80,90 +76,78 @@ export function StudentForm({
     });
   };
 
-  const field = "mt-1";
-  const err = "text-xs text-destructive mt-1";
+  const err = "text-sm text-destructive mt-1";
+  const hint = "mt-1 text-xs text-[var(--mv-text-soft)]";
+  const section = "space-y-4";
+  const sectionTitle =
+    "mv-mono flex items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-[var(--mv-text-soft)] after:h-px after:flex-1 after:bg-[var(--mv-line)]";
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
-      <div>
-        <Label htmlFor="name">Nome</Label>
-        <Input
-          id="name"
-          placeholder="Ex: Joao Silva Ribeiro"
-          className={field}
-          {...register("name")}
-        />
-        {errors.name && <p className={err}>{errors.name.message}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <form id={formId} onSubmit={handleSubmit(submit)} className="space-y-7" noValidate>
+      <fieldset className={section}>
+        <legend className={`${sectionTitle} mb-4 w-full`}>Dados pessoais</legend>
         <div>
-          <Label htmlFor="phone">Telefone (Só números)</Label>
-          <Input
-            id="phone"
-            className={field}
-            placeholder="Ex: 18999999999"
-            {...register("phone")}
-          />
-          {errors.phone && <p className={err}>{errors.phone.message}</p>}
+          <Label htmlFor="name">Nome completo</Label>
+          <Input id="name" placeholder="Ex: João Silva Ribeiro" {...register("name")} />
+          {errors.name && <p className={err}>{errors.name.message}</p>}
         </div>
-        <div>
-          <Label htmlFor="cpf">CPF (Só números)</Label>
-          <Input
-            id="cpf"
-            placeholder="Ex: 99999999988"
-            className={field}
-            {...register("cpf")}
-          />
-          {errors.cpf && <p className={err}>{errors.cpf.message}</p>}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="cpf">CPF</Label>
+            <Input id="cpf" inputMode="numeric" placeholder="99999999988" {...register("cpf")} />
+            {errors.cpf ? (
+              <p className={err}>{errors.cpf.message}</p>
+            ) : (
+              <p className={hint}>Só números</p>
+            )}
+          </div>
+          <div>
+            <Label htmlFor="birthDate">Nascimento</Label>
+            <Input id="birthDate" type="date" {...register("birthDate")} />
+            {errors.birthDate && <p className={err}>{errors.birthDate.message}</p>}
+          </div>
         </div>
-      </div>
+      </fieldset>
 
-      <div>
-        <Label htmlFor="email">Email (opcional)</Label>
-        <Input
-          id="email"
-          className={field}
-          type="email"
-          {...register("email")}
-        />
-        {errors.email && <p className={err}>{errors.email.message}</p>}
-      </div>
-
-      <div className="col-span-2 sm:col-span-1">
-        <Label htmlFor="birthDate">Nascimento</Label>
-        <Input id="birthDate" type="date" {...register("birthDate")} />
-        {errors.birthDate && <p className={err}>{errors.birthDate.message}</p>}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="heightCm">Altura (cm)</Label>
-          <Input
-            id="heightCm"
-            className={field}
-            type="number"
-            placeholder="Ex: 170"
-            {...register("heightCm")}
-          />
-          {errors.heightCm && <p className={err}>{errors.heightCm.message}</p>}
+      <fieldset className={section}>
+        <legend className={`${sectionTitle} mb-4 w-full`}>Contato</legend>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="phone">WhatsApp</Label>
+            <Input id="phone" inputMode="tel" placeholder="18999999999" {...register("phone")} />
+            {errors.phone ? (
+              <p className={err}>{errors.phone.message}</p>
+            ) : (
+              <p className={hint}>Só números, com DDD</p>
+            )}
+          </div>
+          <div>
+            <Label htmlFor="email">E-mail (opcional)</Label>
+            <Input id="email" type="email" placeholder="aluno@email.com" {...register("email")} />
+            {errors.email && <p className={err}>{errors.email.message}</p>}
+          </div>
         </div>
-        <div>
-          <Label htmlFor="weightKg">Peso (kg)</Label>
-          <Input
-            id="weightKg"
-            className={field}
-            type="number"
-            placeholder="Ex: 70"
-            {...register("weightKg")}
-          />
-          {errors.weightKg && <p className={err}>{errors.weightKg.message}</p>}
-        </div>
-      </div>
+      </fieldset>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Salvando..." : "Salvar"}
-      </Button>
+      <fieldset className={section}>
+        <legend className={`${sectionTitle} mb-4 w-full`}>Medidas</legend>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div>
+            <Label htmlFor="heightCm">Altura (cm)</Label>
+            <Input id="heightCm" type="number" placeholder="170" {...register("heightCm")} />
+            {errors.heightCm && <p className={err}>{errors.heightCm.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="weightKg">Peso (kg)</Label>
+            <Input id="weightKg" type="number" placeholder="70" {...register("weightKg")} />
+            {errors.weightKg && <p className={err}>{errors.weightKg.message}</p>}
+          </div>
+          <p className="col-span-2 self-end rounded-xl bg-[var(--mv-brand-50)] px-3.5 py-2.5 text-sm text-[var(--mv-text-soft)] sm:col-span-1">
+            Segurança: altura a partir de 140 cm e peso entre 42 e 107 kg.
+          </p>
+        </div>
+      </fieldset>
     </form>
   );
 }

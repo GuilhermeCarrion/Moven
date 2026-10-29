@@ -1,17 +1,36 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { SystemUser } from "@/hooks/useUsers";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Briefcase, GraduationCap, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
 import { PasswordInput } from "../ui/password-input";
 
-const allRoles = [
-  { value: "GESTOR", label: "Gestor" },
-  { value: "PROFESSOR", label: "Professor" },
-  { value: "ADMIN", label: "Admin" },
+// Descrições batem com as permissões das rotas da API (authorizeRequest)
+export const allRoles = [
+  {
+    value: "ADMIN",
+    label: "Administrador",
+    group: "Administradores",
+    desc: "Acesso total, inclusive a outros administradores.",
+    icon: ShieldCheck,
+  },
+  {
+    value: "GESTOR",
+    label: "Gestor",
+    group: "Gestores",
+    desc: "Cuida de alunos, planos, agenda e equipe (menos administradores).",
+    icon: Briefcase,
+  },
+  {
+    value: "PROFESSOR",
+    label: "Professor",
+    group: "Professores",
+    desc: "Cria aulas, agenda alunos, marca presença e responde mensagens.",
+    icon: GraduationCap,
+  },
 ] as const;
 
 const makeSchema = (isEdit: boolean) =>
@@ -24,16 +43,14 @@ const makeSchema = (isEdit: boolean) =>
       : z.string().min(8, "A senha deve ter no mínimo 8 caracteres"),
   });
 
-const selectCls =
-  "mt-1 h-10 w-full rounded-lg border border-slate-200/70 bg-white/70 px-2.5 text-sm text-slate-700 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/30";
-
 interface Props {
   user?: SystemUser;
   onSubmit: (data: Record<string, unknown>) => void;
-  isSubmitting: boolean;
+  // os botões ficam no rodapé do Modal e enviam este form via atributo `form={formId}`
+  formId?: string;
 }
 
-export function UserForm({ user, onSubmit, isSubmitting }: Props) {
+export function UserForm({ user, onSubmit, formId = "user-form" }: Props) {
   const { user: current } = useAuth();
   const isEdit = !!user;
   const schema = makeSchema(isEdit);
@@ -54,7 +71,9 @@ export function UserForm({ user, onSubmit, isSubmitting }: Props) {
     (r) => r.value !== "ADMIN" || current?.role === "ADMIN",
   );
 
-  const err = "text-xs text-destructive mt-1";
+  const err = "text-sm text-destructive mt-1";
+  const sectionTitle =
+    "mv-mono mb-4 flex w-full items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-[var(--mv-text-soft)] after:h-px after:flex-1 after:bg-[var(--mv-line)]";
 
   const submit = (values: Values) => {
     const payload: Record<string, unknown> = {
@@ -67,49 +86,57 @@ export function UserForm({ user, onSubmit, isSubmitting }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
-      <div>
-        <Label htmlFor="name">Nome</Label>
-        <Input id="name" {...register("name")} />
-        {errors.name && <p className={err}>{errors.name.message}</p>}
-      </div>
-
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" {...register("email")} />
-        {errors.email && <p className={err}>{errors.email.message}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
-        <div>
-          <Label htmlFor="role">Papel</Label>
-          <select id="role" className={selectCls} {...register("role")}>
-            {roles.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {!isEdit && (
+    <form id={formId} onSubmit={handleSubmit(submit)} className="space-y-7" noValidate>
+      <fieldset className="space-y-4">
+        <legend className={sectionTitle}>Dados de acesso</legend>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
+            <Label htmlFor="name">Nome</Label>
+            <Input id="name" placeholder="Ex: Milena Souza" {...register("name")} />
+            {errors.name && <p className={err}>{errors.name.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="email">E-mail</Label>
+            <Input id="email" type="email" autoComplete="off" placeholder="nome@email.com" {...register("email")} />
+            {errors.email && <p className={err}>{errors.email.message}</p>}
+          </div>
+        </div>
+        {!isEdit && (
+          <div className="sm:w-1/2 sm:pr-2">
             <Label htmlFor="password">Senha inicial</Label>
-            <PasswordInput
-              id="password"
-              placeholder="mín. 8 caracteres"
-              {...register("password")}
-            />
-            {errors.password && (
+            <PasswordInput id="password" autoComplete="new-password" placeholder="mín. 8 caracteres" {...register("password")} />
+            {errors.password ? (
               <p className={err}>{errors.password.message}</p>
+            ) : (
+              <p className="mt-1 text-xs text-[var(--mv-text-soft)]">Repasse para a pessoa; ela troca no perfil.</p>
             )}
           </div>
         )}
-      </div>
+      </fieldset>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Salvando..." : isEdit ? "Salvar" : "Criar usuário"}
-      </Button>
+      <fieldset>
+        <legend className={sectionTitle}>Papel</legend>
+        {/* cartões em vez de select: cada papel já mostra o que pode fazer */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          {roles.map((r) => (
+            <label
+              key={r.value}
+              className="group flex cursor-pointer flex-col gap-1 rounded-2xl border border-[var(--mv-line)] p-3.5 transition-colors hover:bg-[var(--mv-brand-50)] has-[:checked]:border-[var(--mv-brand)] has-[:checked]:bg-[var(--mv-brand-50)] has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-[var(--mv-brand)]/15"
+            >
+              <span className="flex items-center gap-2">
+                <input type="radio" value={r.value} className="sr-only" {...register("role")} />
+                <r.icon className="h-[18px] w-[18px] text-[var(--mv-brand-700)]" />
+                <span className="font-semibold text-[var(--mv-text)]">{r.label}</span>
+                <span
+                  aria-hidden
+                  className="ml-auto h-4 w-4 rounded-full border-2 border-[var(--mv-line)] group-has-[:checked]:border-[5px] group-has-[:checked]:border-[var(--mv-brand)]"
+                />
+              </span>
+              <span className="text-sm text-[var(--mv-text-soft)]">{r.desc}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
     </form>
   );
 }

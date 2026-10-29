@@ -2,13 +2,12 @@
 
 import { Sidebar } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { BlobField } from "@/components/layout/BlobField";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 
-const CANVAS_BG =
-  "linear-gradient(160deg, oklch(0.95 0.015 255), oklch(0.97 0.01 300) 45%, oklch(0.96 0.012 258))";
+// shortcut: cor fixa (azul Moven); trocar por academy.brandColor quando existir no banco
+const ACADEMY_BRAND = "#1463ff";
 
 export default function DashboardLayout({
   children,
@@ -21,26 +20,22 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <div
-        className="relative h-screen overflow-hidden"
-        style={{ background: CANVAS_BG }}
+        className="mv-app mv-canvas relative flex h-screen overflow-hidden"
+        style={{ "--mv-brand": ACADEMY_BRAND } as React.CSSProperties}
       >
-        <BlobField />
-
-        <div className="relative z-10 flex h-screen">
-          {/* Sidebar: só desktop */}
-          <div className="hidden lg:block">
-            <Sidebar
-              isCollapsed={isCollapsed}
-              onToggle={() => setIsCollapsed((v) => !v)}
-              onLogout={signOut}
-              user={user}
-            />
-          </div>
-
-          <main className="flex-1 overflow-y-auto p-4 pb-24 lg:p-6 lg:pb-6">
-            {children}
-          </main>
+        {/* Sidebar: só desktop */}
+        <div className="relative hidden lg:block">
+          <Sidebar
+            isCollapsed={isCollapsed}
+            onToggle={() => setIsCollapsed((v) => !v)}
+            onLogout={signOut}
+            user={user}
+          />
         </div>
+
+        <main className="relative flex-1 overflow-y-auto p-3 pb-28 sm:p-4 sm:pb-28 lg:p-5 lg:pl-2">
+          {children}
+        </main>
 
         {/* Barra inferior: só mobile */}
         <BottomNav user={user} onLogout={signOut} />

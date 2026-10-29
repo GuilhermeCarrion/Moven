@@ -11,19 +11,24 @@ import {
   ClassSession,
   AttendanceStatus,
 } from "@/types/models";
+import { Check, CheckCheck, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { initials } from "../layout/Sidebar";
 import { Button } from "../ui/button";
+import { selectCls } from "./ClassSessionForm";
 
-const apptStatus: Record<AppointmentStatus, string> = {
-  BOOKED: "Agendado",
-  CONFIRMED: "Confirmado",
-  CANCELLED: "Cancelado",
-  RESCHEDULED: "Remarcado",
+const apptStatus: Record<AppointmentStatus, { label: string; cls: string }> = {
+  BOOKED: { label: "Agendado", cls: "bg-[var(--mv-brand-100)] text-[var(--mv-brand-700)]" },
+  CONFIRMED: { label: "Confirmado", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  CANCELLED: { label: "Cancelado", cls: "bg-red-500/10 text-red-600 dark:text-red-300" },
+  RESCHEDULED: { label: "Remarcado", cls: "bg-slate-500/10 text-slate-600 dark:text-slate-300" },
 };
 
-const selectCls =
-  "mt-1 h-10 w-full rounded-lg border border-slate-200/70 bg-white/70 px-2.5 text-sm text-slate-700 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/30";
+const pill =
+  "flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold transition-colors";
+const pillOff =
+  "border-[var(--mv-line)] text-[var(--mv-text-soft)] hover:bg-[var(--mv-brand-50)] hover:text-[var(--mv-text)]";
 
 export function SessionDetail({ session }: { session: ClassSession }) {
   const { data: appts, isLoading } = useAppointmentsBySession(session.id);
@@ -63,27 +68,28 @@ export function SessionDetail({ session }: { session: ClassSession }) {
   return (
     <div className="space-y-4">
       {/* Totalizador */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-[var(--brand-cyan)]/15 px-3 py-1 text-xs font-semibold text-cyan-700">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="rounded-full bg-[var(--mv-brand-100)] px-3 py-1 font-semibold tabular-nums text-[var(--mv-brand-700)]">
           {booked}/{session.capacity} agendados
         </span>
-        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-          {confirmedCount} confirmados
+        <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-1 font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+          <CheckCheck className="h-3.5 w-3.5" aria-hidden /> {confirmedCount} confirmados
         </span>
       </div>
 
       {/* Agendar aluno */}
-      <div className="flex items-end gap-2 border-b border-white/60 pb-4">
-        <div className="flex-1">
-          <label className="text-xs font-medium text-slate-600">
-            Agendar aluno
-          </label>
+      <div>
+        <label htmlFor={`book-${session.id}`} className="text-sm font-medium text-[var(--mv-text)]">
+          Agendar aluno
+        </label>
+        <div className="mt-1.5 flex gap-2">
           <select
+            id={`book-${session.id}`}
             value={studentId}
             onChange={(e) => setStudentId(e.target.value)}
-            className={selectCls}
+            className={`${selectCls} flex-1`}
           >
-            <option value="">Selecione um aluno...</option>
+            <option value="">Selecione...</option>
             {students
               ?.filter((s) => s.active)
               .map((s) => (
@@ -92,90 +98,90 @@ export function SessionDetail({ session }: { session: ClassSession }) {
                 </option>
               ))}
           </select>
+          <Button onClick={handleBook} disabled={book.isPending}>
+            Agendar
+          </Button>
         </div>
-        <Button onClick={handleBook} disabled={book.isPending}>
-          Agendar
-        </Button>
       </div>
 
       {/* Lista de alunos */}
       {isLoading ? (
-        <p className="text-sm text-slate-400">Carregando...</p>
+        <p className="text-sm text-[var(--mv-text-soft)]">Carregando...</p>
       ) : booked === 0 ? (
-        <p className="text-sm text-slate-400">Nenhum aluno agendado.</p>
+        <p className="rounded-xl border border-dashed border-[var(--mv-line)] py-5 text-center text-sm text-[var(--mv-text-soft)]">
+          Nenhum aluno agendado ainda.
+        </p>
       ) : (
-        <ul className="space-y-2">
-          {activeAppts?.map((a) => (
-            <li
-              key={a.id}
-              className="rounded-lg border border-white/60 bg-white/50 p-3 text-sm"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-800">
-                  {a.student?.name}
-                </span>
-                <span className="text-xs text-slate-500">
-                  {apptStatus[a.status]}
-                </span>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {a.status === "BOOKED" && (
-                  <Button
-                    size="xs"
-                    variant="outline"
+        <ul className="divide-y divide-[var(--mv-line)]">
+          {activeAppts?.map((a) => {
+            const name = a.student?.name ?? "Aluno";
+            const st = apptStatus[a.status];
+            return (
+              <li key={a.id} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--mv-brand-100)] text-[11px] font-bold text-[var(--mv-brand-700)]">
+                    {initials(name)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-semibold text-[var(--mv-text)]">{name}</span>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${st.cls}`}>{st.label}</span>
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-[42px]">
+                  <button
+                    aria-pressed={a.attendance === "PRESENT"}
+                    onClick={() => mark(a.id, "PRESENT")}
+                    className={`${pill} ${
+                      a.attendance === "PRESENT"
+                        ? "border-transparent bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                        : pillOff
+                    }`}
+                  >
+                    <Check className="h-4 w-4" /> Presente
+                  </button>
+                  <button
+                    aria-pressed={a.attendance === "ABSENT"}
+                    onClick={() => mark(a.id, "ABSENT")}
+                    className={`${pill} ${
+                      a.attendance === "ABSENT"
+                        ? "border-transparent bg-red-500/10 text-red-600 dark:text-red-300"
+                        : pillOff
+                    }`}
+                  >
+                    <X className="h-4 w-4" /> Faltou
+                  </button>
+                  {a.status === "BOOKED" && (
+                    <button
+                      onClick={() =>
+                        action.mutate(
+                          { id: a.id, action: "confirm" },
+                          { onError: (e) => toast.error(apiError(e)) },
+                        )
+                      }
+                      className={`${pill} ${pillOff}`}
+                    >
+                      <CheckCheck className="h-4 w-4" /> Confirmar
+                    </button>
+                  )}
+                  <button
+                    title="Cancelar agendamento"
+                    aria-label={`Cancelar agendamento de ${name}`}
                     onClick={() =>
                       action.mutate(
-                        { id: a.id, action: "confirm" },
-                        { onError: (e) => toast.error(apiError(e)) },
+                        { id: a.id, action: "cancel" },
+                        {
+                          onSuccess: () => toast.success("Agendamento cancelado"),
+                          onError: (e) => toast.error(apiError(e)),
+                        },
                       )
                     }
+                    className="ml-auto flex h-9 items-center rounded-lg px-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-300"
                   >
-                    Confirmar
-                  </Button>
-                )}
-                <Button
-                  size="xs"
-                  variant="outline"
-                  className={
-                    a.attendance === "PRESENT"
-                      ? "border-transparent bg-green-100 text-green-700 hover:bg-green-100"
-                      : ""
-                  }
-                  onClick={() => mark(a.id, "PRESENT")}
-                >
-                  Presente
-                </Button>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  className={
-                    a.attendance === "ABSENT"
-                      ? "border-transparent bg-red-100 text-red-700 hover:bg-red-100"
-                      : ""
-                  }
-                  onClick={() => mark(a.id, "ABSENT")}
-                >
-                  Faltou
-                </Button>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  className="text-red-600 hover:bg-red-50"
-                  onClick={() =>
-                    action.mutate(
-                      { id: a.id, action: "cancel" },
-                      {
-                        onSuccess: () => toast.success("Agendamento cancelado"),
-                        onError: (e) => toast.error(apiError(e)),
-                      },
-                    )
-                  }
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </li>
-          ))}
+                    Cancelar
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

@@ -30,34 +30,49 @@ export function ConfirmDialog({
   return createPortal(
     <>
       <div
-        className="animate-in fade-in-0 fixed inset-0 z-[60] bg-slate-900/20 backdrop-blur-sm"
+        className="animate-in fade-in-0 fixed inset-0 z-[60] bg-[rgb(11_21_48/0.22)] backdrop-blur-[2px]"
         onClick={onCancel}
       />
-      <div className="animate-in slide-in-from-bottom fixed inset-x-0 bottom-0 z-[70] rounded-t-3xl border-t border-white/60 bg-white/90 p-6 pb-8 shadow-2xl backdrop-blur-2xl sm:inset-0 sm:m-auto sm:h-fit sm:max-w-sm sm:rounded-3xl sm:border">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
-          <AlertTriangle className="h-6 w-6 text-amber-600" />
+      <div
+        role="alertdialog"
+        aria-labelledby="confirm-title"
+        aria-describedby="confirm-message"
+        className="animate-in slide-in-from-bottom-6 sm:zoom-in-95 fixed inset-x-0 bottom-0 z-[70] rounded-t-[28px] border border-[var(--mv-glass-line)] bg-[var(--mv-surface)]/85 p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-[inset_0_1px_0_var(--mv-glass-hi),0_30px_60px_-20px_var(--mv-glass-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:inset-0 sm:m-auto sm:h-fit sm:max-w-sm sm:rounded-[28px] sm:pb-6"
+      >
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15">
+          <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
         </div>
-        <h3 className="text-center text-lg font-extrabold text-slate-800">
+        <h3
+          id="confirm-title"
+          className="text-center text-lg font-bold text-[var(--mv-text)]"
+        >
           {title}
         </h3>
-        <p className="mt-2 text-center text-sm text-slate-500">{message}</p>
+        <p
+          id="confirm-message"
+          className="mt-2 text-center text-[var(--mv-text-soft)]"
+        >
+          {message}
+        </p>
         {children}
-        <div className="mt-6 flex gap-2">
+        {/* celular: empilhado, ação em cima e "Voltar" embaixo */}
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-white/60 bg-white/70 py-2.5 text-sm font-semibold text-slate-600"
+            className="h-12 rounded-xl border sm:flex-1 border-[var(--mv-line)] bg-[var(--mv-surface)] font-semibold text-[var(--mv-text)] transition-colors hover:bg-[var(--mv-brand-50)]"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 rounded-xl bg-rose-500 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-600"
+            className="h-12 rounded-xl bg-red-600 sm:flex-1 font-semibold text-white transition-colors hover:bg-red-700"
           >
             {confirmLabel}
           </button>
         </div>
       </div>
     </>,
-    document.body,
+    // dentro do .mv-app para herdar tokens, cor da academia e tema
+    document.querySelector(".mv-app") ?? document.body,
   );
 }

@@ -4,19 +4,15 @@ import { Professor } from "@/types/models";
 import { useForm } from "react-hook-form";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Button } from "../ui/button";
 
 interface ProfessorFromProps {
   professor?: Professor;
   onSubmit: (data: ProfessorSchema) => void;
-  isSubmitting: boolean;
+  // os botões ficam no rodapé do Modal e enviam este form via atributo `form={formId}`
+  formId?: string;
 }
 
-export function ProfessorForm({
-  professor,
-  onSubmit,
-  isSubmitting,
-}: ProfessorFromProps) {
+export function ProfessorForm({ professor, onSubmit, formId = "professor-form" }: ProfessorFromProps) {
   const {
     register,
     handleSubmit,
@@ -28,48 +24,38 @@ export function ProfessorForm({
       : undefined,
   });
 
-  const field = "mt-1";
-  const err = "text-xs text-destructive mt-1";
+  const err = "text-sm text-destructive mt-1";
+  const hint = "mt-1 text-xs text-[var(--mv-text-soft)]";
+  const sectionTitle =
+    "mv-mono mb-4 flex w-full items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-[var(--mv-text-soft)] after:h-px after:flex-1 after:bg-[var(--mv-line)]";
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <div>
-        <Label htmlFor="name">Nome</Label>
-        <Input
-          id="name"
-          placeholder="Ex: Ana Carolina Fontes"
-          className={field}
-          {...register("name")}
-        />
-        {errors.name && <p className={err}>{errors.name.message}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-7" noValidate>
+      <fieldset className="space-y-4">
+        <legend className={sectionTitle}>Dados do professor</legend>
         <div>
-          <Label htmlFor="phone">Telefone (só números)</Label>
-          <Input
-            id="phone"
-            className={field}
-            placeholder="Ex: 18999998888"
-            {...register("phone")}
-          />
-          {errors.phone && <p className={err}>{errors.phone.message}</p>}
+          <Label htmlFor="name">Nome completo</Label>
+          <Input id="name" placeholder="Ex: Ana Carolina Fontes" {...register("name")} />
+          {errors.name && <p className={err}>{errors.name.message}</p>}
         </div>
-        <div>
-          <Label htmlFor="cpf">CPF (só números)</Label>
-          <Input
-            id="cpf"
-            placeholder="Ex: 99999999988"
-            className={field}
-            {...register("cpf")}
-          />
-          {errors.cpf && <p className={err}>{errors.cpf.message}</p>}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="cpf">CPF</Label>
+            <Input id="cpf" inputMode="numeric" placeholder="99999999988" {...register("cpf")} />
+            {errors.cpf ? <p className={err}>{errors.cpf.message}</p> : <p className={hint}>Só números</p>}
+          </div>
+          <div>
+            <Label htmlFor="phone">WhatsApp</Label>
+            <Input id="phone" inputMode="tel" placeholder="18999998888" {...register("phone")} />
+            {errors.phone ? (
+              <p className={err}>{errors.phone.message}</p>
+            ) : (
+              <p className={hint}>Só números, com DDD</p>
+            )}
+          </div>
         </div>
-      </div>
-
-      <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Salvando..." : "Salvar"}
-      </Button>
+      </fieldset>
+      {/* Próxima seção: "Acesso ao painel" (criar login do professor) */}
     </form>
   );
 }
