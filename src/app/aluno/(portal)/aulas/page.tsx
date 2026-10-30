@@ -3,6 +3,7 @@
 import { CloudField } from "@/components/landing/CloudField";
 import { initials } from "@/components/layout/Sidebar";
 import { ConfirmDialog } from "@/components/student/ConfirmDialog";
+import { MyCalendar } from "@/components/student/MyCalendar";
 import {
   BookPreview,
   StudentClass,
@@ -12,9 +13,16 @@ import {
   useStudentClasses,
 } from "@/hooks/useStudentClasses";
 import { useStudentCredits } from "@/hooks/useStudentCredits";
+import { useSlideIn } from "@/hooks/useSlideIn";
 import { apiError } from "@/lib/apiError";
 import { cancelDeadline } from "@/lib/cancelWindow";
-import { CheckCheck, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCheck,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
 import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
@@ -100,6 +108,13 @@ const bigBtn =
 export default function AulasPage() {
   const [selected, setSelected] = useState(() => atMidnight(new Date()));
   const [filter, setFilter] = useState<Filter>("todos");
+  const [calOpen, setCalOpen] = useState(false);
+  // dia seguinte ou filtro à direita entram pela direita
+  const slide = useSlideIn(
+    +selected,
+    FILTERS.findIndex((f) => f.value === filter),
+  );
+  const enter = `motion-safe:animate-in fade-in-0 duration-300 ease-out ${slide}`;
 
   const weekStart = startOfWeek(selected);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -243,9 +258,22 @@ export default function AulasPage() {
           >
             <ChevronRight className="h-5 w-5" />
           </button>
+          <button
+            onClick={() => setCalOpen((o) => !o)}
+            aria-pressed={calOpen}
+            aria-label="Meu calendário"
+            className={`ml-1 flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+              calOpen
+                ? "bg-[var(--mv-brand-100)] text-[var(--mv-brand-700)]"
+                : "text-[var(--mv-text-soft)] hover:bg-[var(--mv-brand-50)]"
+            }`}
+          >
+            <CalendarDays className="h-5 w-5" />
+          </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
+        {/* troca de semana: a faixa remonta e desliza */}
+        <div key={+weekStart} className={`grid grid-cols-7 gap-1 ${enter}`}>
           {weekDays.map((d) => {
             const active = sameDay(d, selected);
             const today = sameDay(d, now);
@@ -291,6 +319,27 @@ export default function AulasPage() {
         </div>
       </section>
 
+      {/* Mês com as aulas do aluno (o mesmo de Minhas aulas): tocar num dia abre ele aqui para agendar.
+          Abre e fecha deslizando; a chave pelo mês faz o calendário abrir no mês do dia escolhido. */}
+      <div
+        inert={!calOpen}
+        // fechado: mb-0 anula o espaço do space-y-4, senão sobra um vão duplo
+        className={`grid transition-[grid-template-rows,opacity,margin] duration-300 ease-out motion-reduce:transition-none ${
+          calOpen ? "grid-rows-[1fr] opacity-100" : "mb-0 grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <MyCalendar
+            key={`${selected.getFullYear()}-${selected.getMonth()}`}
+            selected={selected}
+            onSelect={(d) => {
+              setSelected(atMidnight(d));
+              setCalOpen(false);
+            }}
+          />
+        </div>
+      </div>
+
       {/* Dia escolhido + filtro */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <p className="font-semibold text-[var(--mv-text)] first-letter:uppercase">
@@ -322,217 +371,219 @@ export default function AulasPage() {
         ))}
       </div>
 
-      {/* Linha do tempo do dia */}
-      {isLoading ? (
-        <p className="py-8 text-center text-[var(--mv-text-soft)]">
-          Carregando...
-        </p>
-      ) : dayClasses.length === 0 ? (
-        <div className="relative overflow-hidden rounded-[22px] border border-dashed border-[var(--mv-line)] bg-[var(--mv-surface)]/60 px-4 py-14 text-center">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_top,black,transparent_85%)]"
-            style={{ "--mv-ambient-alpha": 0.45 } as React.CSSProperties}
-          >
-            <CloudField ambient spotlight={false} />
+      {/* Linha do tempo do dia: remonta (e desliza) ao trocar dia ou filtro e quando os dados chegam */}
+      <div key={`${+selected}-${filter}-${isLoading}`} className={enter}>
+        {isLoading ? (
+          <p className="py-8 text-center text-[var(--mv-text-soft)]">
+            Carregando...
+          </p>
+        ) : dayClasses.length === 0 ? (
+          <div className="relative overflow-hidden rounded-[22px] border border-dashed border-[var(--mv-line)] bg-[var(--mv-surface)]/60 px-4 py-14 text-center">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_top,black,transparent_85%)]"
+              style={{ "--mv-ambient-alpha": 0.45 } as React.CSSProperties}
+            >
+              <CloudField ambient spotlight={false} />
+            </div>
+            <p className="relative font-semibold text-[var(--mv-text)]">
+              {filter === "todos"
+                ? "Nenhuma aula neste dia"
+                : "Nada com esse filtro"}
+            </p>
+            <p className="relative mt-1 text-sm text-[var(--mv-text-soft)]">
+              {filter === "todos"
+                ? "Toque em outro dia da semana."
+                : "Troque o filtro ou o dia."}
+            </p>
           </div>
-          <p className="relative font-semibold text-[var(--mv-text)]">
-            {filter === "todos"
-              ? "Nenhuma aula neste dia"
-              : "Nada com esse filtro"}
-          </p>
-          <p className="relative mt-1 text-sm text-[var(--mv-text-soft)]">
-            {filter === "todos"
-              ? "Toque em outro dia da semana."
-              : "Troque o filtro ou o dia."}
-          </p>
-        </div>
-      ) : (
-        <ul className="relative space-y-3 before:absolute before:bottom-6 before:left-[60px] before:top-6 before:w-px before:bg-[var(--mv-line)]">
-          {dayClasses.map((c, i) => {
-            const kind = cardKind(c);
-            const start = new Date(c.startAt);
-            const end = new Date(start.getTime() + c.durationMin * 60000);
-            const free = Math.max(0, c.capacity - c.booked);
-            const mine = kind === "booked" || kind === "confirmed";
-            const quiet = kind === "past" || kind === "closed";
-            const dl = cancelDeadline(c.startAt, windowH);
-            const busy =
-              bookingId === c.id ||
-              (!!c.myAppointment && actingId === c.myAppointment.id);
-            return (
-              <Fragment key={c.id}>
-                {i === nowMarkerAt && nowMarker}
-                <li className="grid grid-cols-[48px_minmax(0,1fr)] gap-3">
-                  <div
-                    className={`pt-4 text-right ${quiet ? "opacity-60" : ""}`}
-                  >
-                    <p className="text-sm font-bold tabular-nums text-[var(--mv-text)]">
-                      {hhmm(start)}
-                    </p>
-                    <p className="text-xs tabular-nums text-[var(--mv-text-soft)]">
-                      {hhmm(end)}
-                    </p>
-                  </div>
-
-                  <div className="relative pl-4">
-                    <span
-                      aria-hidden
-                      className={`absolute -left-[6px] top-[20px] h-3 w-3 rounded-full ${
-                        mine
-                          ? "bg-[var(--mv-brand)] ring-4 ring-[var(--mv-brand)]/20"
-                          : kind === "available"
-                            ? "border-2 border-[var(--mv-brand)] bg-[var(--mv-surface)]"
-                            : "bg-[var(--mv-text-soft)]/40"
-                      }`}
-                    />
-
-                    <article
-                      className={`rounded-2xl p-4 ${
-                        mine
-                          ? "bg-[var(--mv-brand-50)] ring-1 ring-[var(--mv-brand)]/50"
-                          : kind === "available"
-                            ? "border border-[var(--mv-line)] bg-[var(--mv-surface)] shadow-[0_1px_2px_rgb(11_21_48/0.04)]"
-                            : "border border-[var(--mv-line)]"
-                      }`}
+        ) : (
+          <ul className="relative space-y-3 before:absolute before:bottom-6 before:left-[60px] before:top-6 before:w-px before:bg-[var(--mv-line)]">
+            {dayClasses.map((c, i) => {
+              const kind = cardKind(c);
+              const start = new Date(c.startAt);
+              const end = new Date(start.getTime() + c.durationMin * 60000);
+              const free = Math.max(0, c.capacity - c.booked);
+              const mine = kind === "booked" || kind === "confirmed";
+              const quiet = kind === "past" || kind === "closed";
+              const dl = cancelDeadline(c.startAt, windowH);
+              const busy =
+                bookingId === c.id ||
+                (!!c.myAppointment && actingId === c.myAppointment.id);
+              return (
+                <Fragment key={c.id}>
+                  {i === nowMarkerAt && nowMarker}
+                  <li className="grid grid-cols-[48px_minmax(0,1fr)] gap-3">
+                    <div
+                      className={`pt-4 text-right ${quiet ? "opacity-60" : ""}`}
                     >
-                      <div className={quiet ? "opacity-70" : ""}>
-                        <div className="flex items-start gap-2">
-                          <p className="min-w-0 flex-1 text-[17px] font-bold leading-snug text-[var(--mv-text)]">
-                            {c.name}
-                          </p>
-                          {chip[kind] && (
-                            <span
-                              className={`flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${chip[kind].cls}`}
-                            >
-                              {chip[kind].label}
-                            </span>
+                      <p className="text-sm font-bold tabular-nums text-[var(--mv-text)]">
+                        {hhmm(start)}
+                      </p>
+                      <p className="text-xs tabular-nums text-[var(--mv-text-soft)]">
+                        {hhmm(end)}
+                      </p>
+                    </div>
+
+                    <div className="relative pl-4">
+                      <span
+                        aria-hidden
+                        className={`absolute -left-[6px] top-[20px] h-3 w-3 rounded-full ${
+                          mine
+                            ? "bg-[var(--mv-brand)] ring-4 ring-[var(--mv-brand)]/20"
+                            : kind === "available"
+                              ? "border-2 border-[var(--mv-brand)] bg-[var(--mv-surface)]"
+                              : "bg-[var(--mv-text-soft)]/40"
+                        }`}
+                      />
+
+                      <article
+                        className={`rounded-2xl p-4 ${
+                          mine
+                            ? "bg-[var(--mv-brand-50)] ring-1 ring-[var(--mv-brand)]/50"
+                            : kind === "available"
+                              ? "border border-[var(--mv-line)] bg-[var(--mv-surface)] shadow-[0_1px_2px_rgb(11_21_48/0.04)]"
+                              : "border border-[var(--mv-line)]"
+                        }`}
+                      >
+                        <div className={quiet ? "opacity-70" : ""}>
+                          <div className="flex items-start gap-2">
+                            <p className="min-w-0 flex-1 text-[17px] font-bold leading-snug text-[var(--mv-text)]">
+                              {c.name}
+                            </p>
+                            {chip[kind] && (
+                              <span
+                                className={`flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${chip[kind].cls}`}
+                              >
+                                {chip[kind].label}
+                              </span>
+                            )}
+                          </div>
+
+                          {c.professorName && (
+                            <p className="mt-1.5 flex items-center gap-2 text-sm text-[var(--mv-text-soft)]">
+                              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--mv-brand-100)] text-[10px] font-bold text-[var(--mv-brand-700)]">
+                                {initials(c.professorName)}
+                              </span>
+                              <span className="truncate">{c.professorName}</span>
+                              <span className="flex-shrink-0">
+                                · {c.durationMin} min
+                              </span>
+                            </p>
+                          )}
+
+                          {!quiet && (
+                            <div className="mt-3 flex items-center gap-3">
+                              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--mv-brand-100)]">
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{
+                                    width: `${Math.min(1, c.booked / c.capacity) * 100}%`,
+                                    background:
+                                      free === 0
+                                        ? "var(--mv-accent)"
+                                        : "var(--mv-brand)",
+                                  }}
+                                />
+                              </div>
+                              <span
+                                className={`text-sm font-semibold tabular-nums ${free === 0 ? "text-[var(--mv-accent)]" : "text-[var(--mv-text)]"}`}
+                              >
+                                {free === 0
+                                  ? "Sem vagas"
+                                  : `${free} ${free === 1 ? "vaga" : "vagas"}`}
+                              </span>
+                            </div>
                           )}
                         </div>
 
-                        {c.professorName && (
-                          <p className="mt-1.5 flex items-center gap-2 text-sm text-[var(--mv-text-soft)]">
-                            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--mv-brand-100)] text-[10px] font-bold text-[var(--mv-brand-700)]">
-                              {initials(c.professorName)}
-                            </span>
-                            <span className="truncate">{c.professorName}</span>
-                            <span className="flex-shrink-0">
-                              · {c.durationMin} min
-                            </span>
+                        {/* Prazo: até aqui cancela sem custo; depois o crédito já saiu */}
+                        {mine && (
+                          <p className="mt-3 text-xs text-[var(--mv-text-soft)]">
+                            {dl.open
+                              ? `Cancele sem custo até ${dl.label}`
+                              : "Crédito debitado"}
                           </p>
                         )}
 
-                        {!quiet && (
-                          <div className="mt-3 flex items-center gap-3">
-                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--mv-brand-100)]">
-                              <div
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${Math.min(1, c.booked / c.capacity) * 100}%`,
-                                  background:
-                                    free === 0
-                                      ? "var(--mv-accent)"
-                                      : "var(--mv-brand)",
-                                }}
-                              />
-                            </div>
-                            <span
-                              className={`text-sm font-semibold tabular-nums ${free === 0 ? "text-[var(--mv-accent)]" : "text-[var(--mv-text)]"}`}
+                        {/* Ações por estado */}
+                        {kind === "available" && (
+                          <button
+                            disabled={busy || noCredit}
+                            onClick={() => onBook(c)}
+                            className={`${bigBtn} mt-4 w-full bg-[var(--mv-brand)] text-white shadow-[0_12px_28px_-14px_var(--mv-brand)] hover:brightness-110`}
+                          >
+                            {busy ? (
+                              <>
+                                <Loader2 className="h-[18px] w-[18px] animate-spin" />{" "}
+                                Agendando…
+                              </>
+                            ) : noCredit ? (
+                              "Sem créditos para agendar"
+                            ) : (
+                              <>
+                                Agendar{" "}
+                                <span className="font-normal text-white/80">
+                                  · 1 crédito
+                                </span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                        {kind === "booked" && (
+                          <div className="mt-4 flex gap-2">
+                            <button
+                              disabled={busy}
+                              onClick={() =>
+                                onAction(c.myAppointment!.id, "confirm")
+                              }
+                              className={`${bigBtn} flex-1 bg-[var(--mv-brand)] text-white shadow-[0_12px_28px_-14px_var(--mv-brand)] hover:brightness-110`}
                             >
-                              {free === 0
-                                ? "Sem vagas"
-                                : `${free} ${free === 1 ? "vaga" : "vagas"}`}
-                            </span>
+                              <CheckCheck className="h-[18px] w-[18px]" />{" "}
+                              Confirmar
+                            </button>
+                            {dl.open && (
+                              <button
+                                disabled={busy}
+                                onClick={() =>
+                                  onAction(c.myAppointment!.id, "cancel")
+                                }
+                                className={`${bigBtn} border border-red-500/30 px-4 text-red-600 hover:bg-red-500/10 dark:text-red-300`}
+                              >
+                                Cancelar
+                              </button>
+                            )}
                           </div>
                         )}
-                      </div>
-
-                      {/* Prazo: até aqui cancela sem custo; depois o crédito já saiu */}
-                      {mine && (
-                        <p className="mt-3 text-xs text-[var(--mv-text-soft)]">
-                          {dl.open
-                            ? `Cancele sem custo até ${dl.label}`
-                            : "Crédito debitado"}
-                        </p>
-                      )}
-
-                      {/* Ações por estado */}
-                      {kind === "available" && (
-                        <button
-                          disabled={busy || noCredit}
-                          onClick={() => onBook(c)}
-                          className={`${bigBtn} mt-4 w-full bg-[var(--mv-brand)] text-white shadow-[0_12px_28px_-14px_var(--mv-brand)] hover:brightness-110`}
-                        >
-                          {busy ? (
-                            <>
-                              <Loader2 className="h-[18px] w-[18px] animate-spin" />{" "}
-                              Agendando…
-                            </>
-                          ) : noCredit ? (
-                            "Sem créditos para agendar"
-                          ) : (
-                            <>
-                              Agendar{" "}
-                              <span className="font-normal text-white/80">
-                                · 1 crédito
-                              </span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                      {kind === "booked" && (
-                        <div className="mt-4 flex gap-2">
-                          <button
-                            disabled={busy}
-                            onClick={() =>
-                              onAction(c.myAppointment!.id, "confirm")
-                            }
-                            className={`${bigBtn} flex-1 bg-[var(--mv-brand)] text-white shadow-[0_12px_28px_-14px_var(--mv-brand)] hover:brightness-110`}
-                          >
-                            <CheckCheck className="h-[18px] w-[18px]" />{" "}
-                            Confirmar
-                          </button>
-                          {dl.open && (
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                onAction(c.myAppointment!.id, "cancel")
-                              }
-                              className={`${bigBtn} border border-red-500/30 px-4 text-red-600 hover:bg-red-500/10 dark:text-red-300`}
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-                      )}
-                      {kind === "confirmed" && (
-                        <div className="mt-4 flex items-center justify-between gap-2">
-                          <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                            <CheckCheck className="h-4 w-4" /> Presença
-                            confirmada
-                          </p>
-                          {dl.open && (
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                onAction(c.myAppointment!.id, "cancel")
-                              }
-                              className={`${bigBtn} px-4 text-red-600 hover:bg-red-500/10 dark:text-red-300`}
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </article>
-                  </div>
-                </li>
-              </Fragment>
-            );
-          })}
-          {nowMarkerAt === dayClasses.length && nowMarker}
-        </ul>
-      )}
+                        {kind === "confirmed" && (
+                          <div className="mt-4 flex items-center justify-between gap-2">
+                            <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                              <CheckCheck className="h-4 w-4" /> Presença
+                              confirmada
+                            </p>
+                            {dl.open && (
+                              <button
+                                disabled={busy}
+                                onClick={() =>
+                                  onAction(c.myAppointment!.id, "cancel")
+                                }
+                                className={`${bigBtn} px-4 text-red-600 hover:bg-red-500/10 dark:text-red-300`}
+                              >
+                                Cancelar
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </article>
+                    </div>
+                  </li>
+                </Fragment>
+              );
+            })}
+            {nowMarkerAt === dayClasses.length && nowMarker}
+          </ul>
+        )}
+      </div>
 
       <ConfirmDialog
         open={!!displace}

@@ -135,8 +135,17 @@ Os derivados se recalculam sozinhos. Landing e login usam sempre o azul Moven.
   créditos grande e ingresso: testados e descartados. Aulas: semana em faixa (dia escolhido sólido, hoje com
   anel, pontinho por aula), filtro segmentado e a mesma linha do tempo da agenda do painel, com botões de 48px
   ("Agendar · 1 crédito", "Confirmar", "Cancelar"). Aviso de cancelamento: gaveta com botões empilhados no celular.
-- Minhas aulas: abas Próximas / Histórico; cada aula com bloco de data (sólido nas próximas, claro no histórico),
-  status em chip e, ao tocar, a linha do tempo de eventos (fundo cinza neutro, como o card aberto da agenda).
+- Minhas aulas: abas Próximas / Histórico + Calendário (só o ícone no celular). Listas em blocos ("Esta semana",
+  "Próxima semana", depois o mês), linhas compactas num card só (data, nome, hora, chip); ao tocar abre prazo,
+  ações e a linha do tempo de eventos (fundo cinza neutro). "Não respondido" já abre. Calendário: o
+  `MonthCalendar` do painel com `dot` por aula (azul marcada, verde confirmada/presente, vermelho falta) e
+  pontinho **vazado âmbar** nas datas da agenda fixa sem reserva nos próximos 30 dias (`upcomingOccurrences`).
+  É o `MyCalendar` (`components/student/MyCalendar.tsx`), também aberto pelo ícone de calendário em Aulas:
+  lá, tocar num dia fecha o mês e mostra esse dia para agendar.
+- Movimento no portal: abrir/fechar (linha de Minhas aulas, calendário em Aulas) desliza com a grade
+  `grid-rows-[0fr]`→`[1fr]` (fechado fica `inert`); conteúdo trocado (aba, dia, semana, filtro) remonta pela
+  `key` com `motion-safe:animate-in fade-in-0` e entra pelo lado da troca (`useSlideIn`: o que vem depois entra
+  pela direita, 12px para caber no padding do main).
 - Perfil do aluno: pacote como **carteirinha** (cartão na cor da marca com créditos e validade), agenda fixa em
   botões de 44px, "Meus dados", dados do cadastro (só leitura) e **Aparência** com o botão de tema (o celular não
   tem sidebar). Nascimento é só data: formatar com `timeZone: "UTC"`.
@@ -181,7 +190,21 @@ Os derivados se recalculam sozinhos. Landing e login usam sempre o azul Moven.
   `src/components/landing/dashboardData.ts`). O formato dos dados está em `src/components/dashboard/types.ts`.
   Mudou a dashboard, a landing acompanha sozinha. A prévia é `inert` (sem clique/foco) e usa `zoom`
   (0.85 no celular, 0.8 no desktop) para caber como um "print" do painel. Fica cortada (saudação,
-  totalizadores e o topo dos cards) com um degradê curto na base.
+  totalizadores e o topo dos cards) com um degradê curto na base. Ela passa `compact`, que deixa os
+  totalizadores mais baixos para sobrar espaço aos cards; o painel usa o tamanho normal.
+- Telas da landing (`src/components/landing/mocks.tsx`, client): Recursos e Personalizado mostram o
+  sistema no tema claro (`mv-app`), sempre `inert`. Usa o componente real quando ele só recebe props
+  (`MonthCalendar`, `DayAgenda`, `PackageCard`, `CreditsRing`, `DashboardOverview`); réplica com as
+  mesmas classes quando ele depende de login/API (chamada da aula, lista de mensagens, tela Aulas do
+  portal). Datas fictícias são montadas no fuso local (`new Date(2026, 9, 22, …)`) e passadas por
+  `now`/`today`, para servidor e navegador mostrarem o mesmo horário. `zoom` encaixa cada tela no card.
+- "O sistema": no desktop (lg+) o painel cortado; no celular/tablet um iPhone inteiro (`PhoneFrame`) com
+  a versão mobile real da dashboard e a barra de abas do painel (`primary` do `BottomNav`).
+- Seção Personalizado (`ThemePreview`): parte visual numa faixa de vidro fosco de ponta a ponta (como a
+  do WhatsApp); painel + celular do aluno aparecem em todas as larguras (no celular, miniatura).
+  As cores trocam `--mv-brand` com `style` inline **no próprio `.mv-app`** (a classe dele redefine a
+  variável e venceria a herança). O card "Funcional" usa a mesma cor: texto e botão à esquerda,
+  4 exemplos em grade à direita (no celular: texto, exemplos com ícone ao lado e o botão no fim).
 
 - Login: `src/app/login/page.tsx`, `src/components/forms/LoginForm.tsx`
 - Tokens, vidro e fontes: `src/app/globals.css`

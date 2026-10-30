@@ -23,16 +23,18 @@ export function MonthCalendar({
   onPrev,
   onNext,
   onToday,
+  today = new Date(), // fixo na prévia da landing
 }: {
   cursor: Date;
   selected: Date;
-  sessionsByDay: Map<string, { id: string; name: string }[]>;
+  // dot: classe da cor do pontinho (o portal do aluno pinta por status); sem ela, a cor da marca
+  sessionsByDay: Map<string, { id: string; name: string; dot?: string }[]>;
   onSelect: (d: Date) => void;
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
+  today?: Date;
 }) {
-  const today = new Date();
   const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const start = new Date(first);
   start.setDate(first.getDate() - first.getDay());
@@ -122,7 +124,7 @@ export function MonthCalendar({
                     {daySessions.slice(0, 3).map((s) => (
                       <span
                         key={s.id}
-                        className="h-1.5 w-1.5 rounded-full bg-[var(--mv-brand)]"
+                        className={`h-1.5 w-1.5 rounded-full ${s.dot ?? "bg-[var(--mv-brand)]"}`}
                       />
                     ))}
                   </div>
@@ -133,7 +135,7 @@ export function MonthCalendar({
                         key={s.id}
                         className="flex min-w-0 items-center gap-1 text-[11px] font-medium text-[var(--mv-brand-700)]"
                       >
-                        <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--mv-brand)]" />
+                        <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${s.dot ?? "bg-[var(--mv-brand)]"}`} />
                         <span className="truncate">{s.name}</span>
                       </span>
                     ))}
