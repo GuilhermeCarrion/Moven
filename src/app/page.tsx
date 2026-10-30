@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   Activity,
@@ -15,7 +16,6 @@ import {
   CalendarCheck,
   Check,
   MessageCircle,
-  Palette,
   Repeat,
   Smartphone,
 } from "lucide-react";
@@ -29,8 +29,8 @@ import {
   InboxMock,
   PackageMock,
   PhoneFrame,
+  PortalPhone,
   PresenceMock,
-  StudentPortalMock,
   WhatsAppChat,
 } from "@/components/landing/mocks";
 
@@ -48,7 +48,9 @@ const navLinks = [
   { href: "#sistema", label: "Sistema" },
   { href: "#whatsapp", label: "WhatsApp" },
   { href: "#recursos", label: "Recursos" },
+  { href: "#personalizado", label: "Personalizado" },
   { href: "#planos", label: "Planos" },
+  { href: "#contato", label: "Contato" },
 ];
 
 const segments = [
@@ -160,7 +162,8 @@ export default function LandingPage() {
               <Link href="/" aria-label="Moven — início">
                 <MovenLogo />
               </Link>
-              <div className="hidden items-center gap-1 md:flex">
+              {/* os links não cabem ao lado dos botões em tablet (768px): só a partir do lg */}
+              <div className="hidden items-center gap-1 lg:flex">
                 {navLinks.map((l) => (
                   <a
                     key={l.href}
@@ -260,9 +263,7 @@ export default function LandingPage() {
                 desc="Quem vem hoje, quais aulas lotaram, quem confirmou pelo WhatsApp e quem está com o plano vencendo."
               />
               <Reveal className="mt-12">
-                <div className="mv-glass-strong rounded-[30px] p-2 md:p-2.5">
-                  <DashboardMock />
-                </div>
+                <DashboardMock />
               </Reveal>
             </div>
           </section>
@@ -284,9 +285,9 @@ export default function LandingPage() {
                       {steps.map((s, i) => (
                         <li
                           key={s.title}
-                          className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-md"
+                          className="group flex gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-md transition-colors duration-300 hover:border-[var(--mv-brand)]/60 hover:bg-[var(--mv-brand)]/20"
                         >
-                          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white text-[var(--mv-brand)]">
+                          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white text-[var(--mv-brand)] transition-colors duration-300 group-hover:bg-[var(--mv-brand)] group-hover:text-white">
                             <s.icon className="h-5 w-5" />
                           </span>
                           <div>
@@ -356,9 +357,7 @@ export default function LandingPage() {
                     <p className="mt-1 text-sm">
                       Entra com CPF e data de nascimento, agenda e cancela sem chamar a recepção.
                     </p>
-                    <div className="mx-auto mt-5 w-52 translate-y-2 overflow-hidden rounded-t-[30px] border-x-[6px] border-t-[6px] border-white/80 shadow-xl">
-                      <StudentPortalMock />
-                    </div>
+                    <PortalPhone className="mx-auto mt-5 translate-y-2" />
                   </div>
                 </Reveal>
                 <Reveal className="md:col-span-2" delay={160}>
@@ -376,13 +375,20 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* Personalização por academia */}
-          <section id="marca" className="scroll-mt-24 px-5 pb-24">
-            <div className="mx-auto max-w-6xl">
-              <Reveal>
-                <ThemePreview />
-              </Reveal>
+          {/* Personalizado: visual (cores) e funcional (ajuste sob medida) */}
+          <section id="personalizado" className="scroll-mt-24 pb-24">
+            <div className="mx-auto max-w-6xl px-5">
+              <SectionTitle
+                center
+                eyebrow="Personalizado"
+                title="Do jeito da sua academia."
+                desc="No visual e no funcionamento: o Moven se ajusta a você, e não o contrário."
+              />
             </div>
+            {/* faixa de vidro de ponta a ponta + card funcional; os dois dividem a cor escolhida */}
+            <ThemePreview
+              contactHref={waText("Olá! Quero personalizar o Moven para a minha academia.")}
+            />
           </section>
 
           {/* Planos */}
@@ -451,12 +457,13 @@ export default function LandingPage() {
           </section>
 
           {/* CTA final */}
-          <section className="px-3 pb-16 md:px-5 md:pb-24">
+          <section id="contato" className="scroll-mt-24 px-3 pb-16 md:px-5 md:pb-24">
             <Reveal>
               <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[36px] bg-[var(--mv-brand)] px-6 py-16 text-center md:rounded-[48px] md:py-20">
+                {/* grade de pontos andando devagar: a academia "em movimento" */}
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-0 opacity-30"
+                  className="mv-drift pointer-events-none absolute inset-0 opacity-30"
                   style={{
                     backgroundImage: "radial-gradient(white 1px, transparent 1.4px)",
                     backgroundSize: "18px 18px",
@@ -465,14 +472,35 @@ export default function LandingPage() {
                   }}
                 />
                 <div className="relative">
-                  <Palette className="mx-auto h-8 w-8 text-white/80" />
-                  <h2 className="mx-auto mt-4 max-w-3xl text-3xl font-extrabold tracking-tight text-white md:text-5xl">
+                  {/* a conversa já começou: a equipe "digitando…" como no WhatsApp */}
+                  <p className="inline-flex items-center gap-2.5 rounded-full bg-white/15 py-1.5 pl-1.5 pr-4 text-sm font-semibold text-white ring-1 ring-white/25">
+                    <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white">
+                      <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full">
+                        <Image src="/MovenLogo.png" alt="" width={28} height={28} className="scale-[1.35]" />
+                      </span>
+                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#25d366] ring-2 ring-[var(--mv-brand)]" />
+                    </span>
+                    Equipe Moven
+                    <span aria-hidden className="flex gap-1">
+                      {[0, 160, 320].map((d) => (
+                        <span key={d} className="mv-typing h-1.5 w-1.5 rounded-full bg-white" style={{ animationDelay: `${d}ms` }} />
+                      ))}
+                    </span>
+                  </p>
+                  <h2 className="mx-auto mt-5 max-w-3xl text-3xl font-extrabold tracking-tight text-white md:text-5xl">
                     Bora colocar sua academia em movimento?
                   </h2>
                   <p className="mx-auto mt-4 max-w-xl text-lg text-white/80">
-                    Chama a gente no WhatsApp: mostramos o Moven funcionando com as aulas e as cores da
-                    sua academia.
+                    Conte como a sua academia funciona. A gente mostra o Moven com as suas aulas e as
+                    suas cores, e ajusta o que for preciso.
                   </p>
+                  <ul className="mx-auto mt-6 flex max-w-2xl flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-semibold text-white">
+                    {["Demonstração com a sua grade", "Visual com as suas cores", "Ajustes sob medida"].map((t) => (
+                      <li key={t} className="flex items-center gap-1.5">
+                        <Check className="h-4 w-4" /> {t}
+                      </li>
+                    ))}
+                  </ul>
                   <div className="mt-8 flex flex-wrap justify-center gap-3">
                     <a
                       href={waText("Olá! Quero ver o Moven funcionando na minha academia.")}

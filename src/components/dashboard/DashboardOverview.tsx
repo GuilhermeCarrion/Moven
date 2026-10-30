@@ -25,12 +25,14 @@ export function DashboardOverview({
   greeting,
   name,
   dateLabel,
+  compact = false,
 }: {
   data: DashboardData;
   nowMin: number; // minutos desde a meia-noite
   greeting: string;
   name: string;
   dateLabel: string;
+  compact?: boolean; // totalizadores mais baixos (prévia da landing)
 }) {
   const prev = d.revenue.previousMonth;
   const revenueDelta = prev ? (d.revenue.month - prev) / prev : null;
@@ -55,8 +57,9 @@ export function DashboardOverview({
 
       {/* Totalizadores */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <NextClass classes={d.today} nowMin={nowMin} />
+        <NextClass classes={d.today} nowMin={nowMin} compact={compact} />
         <KpiCard
+          compact={compact}
           icon={CalendarDays}
           label="Aulas hoje"
           value={String(d.today.length)}
@@ -64,6 +67,7 @@ export function DashboardOverview({
           detail={`${todayBooked} de ${todayCapacity} vagas`}
         />
         <KpiCard
+          compact={compact}
           icon={Users}
           label="Alunos ativos"
           value={String(d.activeStudents.total)}
@@ -71,6 +75,7 @@ export function DashboardOverview({
           detail="novos no mês"
         />
         <KpiCard
+          compact={compact}
           highlight
           icon={Wallet}
           label="Faturamento do mês"

@@ -16,14 +16,13 @@ import { apiError } from "@/lib/apiError";
 import { formatCpf, formatPhone } from "@/lib/format";
 import { LogOut } from "lucide-react";
 import { DashCard } from "@/components/dashboard/DashCard";
+import { PackageCard } from "@/components/student/PackageCard";
 import { RecurrenceCard } from "@/components/student/RecurrenceCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
-const dateBR = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("pt-BR") : "—";
 // nascimento é só data (meia-noite UTC no banco): no fuso local cairia no dia anterior
 const birthBR = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
@@ -67,54 +66,11 @@ export default function PerfilPage() {
     return <p className="py-8 text-center text-[var(--mv-text-soft)]">Carregando...</p>;
   }
 
-  const pkg = p.package;
   const err = "mt-1 text-sm text-destructive";
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
-      {/* Carteirinha: o pacote como cartão (bloco sólido da marca) */}
-      <section
-        aria-label="Meu pacote"
-        className="relative overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,var(--mv-brand),color-mix(in_oklch,var(--mv-brand)_62%,black))] p-5 text-white shadow-[0_24px_48px_-24px_var(--mv-brand)]"
-      >
-        {/* brilho diagonal sutil, como plástico de cartão */}
-        <span aria-hidden className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-        <div className="relative">
-          <p className="mv-mono text-[10px] uppercase tracking-[0.2em] text-white/70">Carteirinha · aluno</p>
-          <p className="mt-2 truncate text-2xl font-bold tracking-tight">{p.name}</p>
-
-          {pkg ? (
-            <>
-              <div className="mt-5 flex items-end justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs text-white/70">Plano</p>
-                  <p className="truncate font-semibold">{pkg.planName}</p>
-                </div>
-                <p className="flex-shrink-0 text-right leading-none">
-                  <span className="text-3xl font-bold tabular-nums">{pkg.creditsRemaining}</span>
-                  <span className="text-white/70"> / {pkg.creditsTotal}</span>
-                  <span className="mt-1 block text-[11px] font-semibold uppercase tracking-wide text-white/70">
-                    créditos
-                  </span>
-                </p>
-              </div>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/25">
-                <div
-                  className="h-full rounded-full bg-white"
-                  style={{ width: `${Math.min(1, pkg.creditsRemaining / Math.max(1, pkg.creditsTotal)) * 100}%` }}
-                />
-              </div>
-              <p className="mt-3 border-t border-dashed border-white/30 pt-3 text-sm text-white/80">
-                Válido até <b className="text-white">{dateBR(pkg.expiresAt)}</b>
-              </p>
-            </>
-          ) : (
-            <p className="mt-5 rounded-xl bg-white/15 px-3.5 py-3 text-sm">
-              Nenhum pacote ativo. Fale com a recepção para renovar.
-            </p>
-          )}
-        </div>
-      </section>
+      <PackageCard name={p.name} pkg={p.package} />
 
       <RecurrenceCard className="rounded-[22px] border border-[var(--mv-line)] bg-[var(--mv-surface)] p-4 shadow-[0_1px_2px_rgb(11_21_48/0.04)] sm:p-5 lg:row-span-2" />
 

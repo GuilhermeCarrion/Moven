@@ -40,6 +40,7 @@ export function KpiCard({
   trend,
   icon: Icon,
   highlight = false,
+  compact = false,
 }: {
   label: string;
   value: string;
@@ -49,13 +50,14 @@ export function KpiCard({
   trend?: { label: string; value: number; text: string }[]; // barrinhas estáticas; a última = período atual
   icon: LucideIcon;
   highlight?: boolean;
+  compact?: boolean; // versão mais baixa (prévia da landing, que mostra a tela cortada)
 }) {
   const soft = highlight ? "text-white/80" : "text-[var(--mv-text-soft)]";
   const Trend = delta?.up ? TrendingUp : TrendingDown;
 
   return (
     <div
-      className={`relative flex flex-col overflow-hidden rounded-[22px] p-4 sm:p-5 ${
+      className={`relative flex flex-col overflow-hidden rounded-[22px] ${compact ? "p-3.5" : "p-4 sm:p-5"} ${
         highlight
           ? "bg-[linear-gradient(135deg,var(--mv-brand),color-mix(in_oklch,var(--mv-brand)_72%,black))] text-white shadow-[0_18px_40px_-20px_var(--mv-brand)]"
           : "border border-[var(--mv-line)] bg-[var(--mv-surface)] shadow-[0_1px_2px_rgb(11_21_48/0.04)]"
@@ -75,7 +77,7 @@ export function KpiCard({
       </div>
 
       <p
-        className={`mt-2 text-2xl font-bold tracking-tight sm:text-3xl ${highlight ? "" : "text-[var(--mv-text)]"}`}
+        className={`text-2xl font-bold tracking-tight ${compact ? "mt-1" : "mt-2 sm:text-3xl"} ${highlight ? "" : "text-[var(--mv-text)]"}`}
       >
         {value}
       </p>
@@ -84,7 +86,7 @@ export function KpiCard({
         <div
           role="img"
           aria-label={`Últimos ${trend.length} meses: ${trend.map((t) => t.text).join(", ")}`}
-          className="mt-3 flex h-9 items-end gap-1.5"
+          className={`flex items-end gap-1.5 ${compact ? "mt-2 h-6" : "mt-3 h-9"}`}
         >
           {trend.map((t, i) => (
             <span
@@ -107,7 +109,7 @@ export function KpiCard({
 
       {meter !== undefined && (
         <div
-          className={`mt-3 h-1.5 overflow-hidden rounded-full ${highlight ? "bg-white/25" : "bg-[var(--mv-brand-100)]"}`}
+          className={`h-1.5 overflow-hidden rounded-full ${compact ? "mt-2" : "mt-3"} ${highlight ? "bg-white/25" : "bg-[var(--mv-brand-100)]"}`}
         >
           <div
             className={`h-full rounded-full ${highlight ? "bg-white" : "bg-[var(--mv-brand)]"}`}

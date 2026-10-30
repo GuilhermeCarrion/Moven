@@ -1,127 +1,166 @@
 "use client";
 
-import { CalendarDays, ClipboardList, LayoutDashboard, Plus, Users } from "lucide-react";
+import {
+  ArrowRight,
+  BellRing,
+  ChartColumn,
+  MessageCircle,
+  Palette,
+  Plug,
+  SlidersHorizontal,
+  Wrench,
+} from "lucide-react";
 import { useState } from "react";
+import { AgendaPanelMock, PortalPhone } from "./mocks";
+import { Reveal } from "./Reveal";
 
 /**
- * Demonstra a personalização por academia: a prévia só redefine --mv-brand,
- * e todos os tons derivados (.mv-themed) se recalculam sozinhos.
+ * Seção Personalizado: o visual (a cor da academia, trocada ao vivo nas telas reais, que só
+ * redefinem --mv-brand) e o funcional (ajuste sob medida). O card funcional veste a mesma cor.
  */
 
 const palettes = [
-  { name: "Moven", academy: "Studio Ritmo", color: "#1463ff" },
-  { name: "Verde", academy: "Arena Verde", color: "#14a44d" },
-  { name: "Rosa", academy: "Bella Dança", color: "#e0287a" },
-  { name: "Roxo", academy: "Kaizen Lutas", color: "#7c3aed" },
-  { name: "Laranja", academy: "Fit Sol", color: "#f06418" },
+  { name: "Moven", color: "#1463ff" },
+  { name: "Verde", color: "#14a44d" },
+  { name: "Rosa", color: "#e0287a" },
+  { name: "Roxo", color: "#7c3aed" },
+  { name: "Laranja", color: "#f06418" },
 ];
 
-const classes = [
-  { h: "07:00", n: "Funcional", b: 9, c: 12 },
-  { h: "18:00", n: "Jiu-jitsu", b: 16, c: 16 },
-  { h: "19:00", n: "Zumba", b: 14, c: 20 },
+const asks = [
+  {
+    icon: SlidersHorizontal,
+    title: "Regras do seu jeito",
+    desc: "Cancelamento, reposição e validade como a sua academia já trabalha.",
+  },
+  {
+    icon: ChartColumn,
+    title: "Relatórios sob medida",
+    desc: "O número que você acompanha, sem precisar de planilha.",
+  },
+  {
+    icon: BellRing,
+    title: "Novos avisos no WhatsApp",
+    desc: "Aniversário, aula extra ou aquele aluno que sumiu.",
+  },
+  {
+    icon: Plug,
+    title: "Integração",
+    desc: "O Moven conversando com outro sistema que você já usa.",
+  },
 ];
 
-export function ThemePreview() {
+export function ThemePreview({ contactHref }: { contactHref: string }) {
   const [active, setActive] = useState(palettes[0]);
-  const initials = active.academy
-    .split(" ")
-    .map((w) => w[0])
-    .join("");
+  // inline no próprio .mv-app: a classe dele define --mv-brand e venceria a herança
+  const brand = { "--mv-brand": active.color } as React.CSSProperties;
 
   return (
-    <div className="grid items-center gap-10 lg:grid-cols-2">
-      <div>
-        <p className="mv-mono text-xs uppercase tracking-[0.18em] text-[var(--mv-brand-light)]">
-          Sua marca, suas cores
-        </p>
-        <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white md:text-5xl">
-          Depois do login, o Moven veste a camisa da sua academia.
-        </h2>
-        <p className="mt-5 max-w-lg text-lg leading-relaxed">
-          Uma academia verde e branca usa o sistema verde e branco — a equipe no painel e o aluno
-          no portal. Você escolhe a cor; o Moven cuida dos tons.
-        </p>
-        <div className="mt-8 flex flex-wrap gap-2.5">
-          {palettes.map((p) => {
-            const on = p.name === active.name;
-            return (
-              <button
-                key={p.name}
-                type="button"
-                onClick={() => setActive(p)}
-                aria-pressed={on}
-                className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold transition-all ${
-                  on
-                    ? "border-transparent bg-white text-[var(--mv-ink)] shadow-lg"
-                    : "mv-glass text-white hover:-translate-y-0.5"
-                }`}
-              >
-                <span className="h-4 w-4 rounded-full ring-2 ring-white" style={{ background: p.color }} />
-                {p.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div
-        className="mv-themed mv-glass-strong rounded-[28px] p-2 transition-colors"
-        style={{ "--mv-brand": active.color } as React.CSSProperties}
-      >
-        <div className="flex overflow-hidden rounded-[22px] bg-[var(--mv-brand-50)] transition-colors duration-500">
-          <aside className="flex w-14 flex-col items-center gap-2 bg-[var(--mv-brand-deep)] py-4 transition-colors duration-500 sm:w-16">
-            <span className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--mv-brand)] text-[11px] font-extrabold text-white transition-colors duration-500">
-              {initials}
-            </span>
-            {[LayoutDashboard, Users, CalendarDays, ClipboardList].map((Icon, i) => (
-              <span
-                key={i}
-                className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                  i === 2 ? "bg-white/15 text-white" : "text-white/55"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-              </span>
-            ))}
-          </aside>
-          <div className="min-w-0 flex-1 p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-xs text-slate-500">{active.academy}</p>
-                <p className="text-lg font-extrabold text-[var(--mv-ink)]">Agenda</p>
+    <>
+      {/* Visual: faixa de vidro fosco de ponta a ponta (como a do WhatsApp), o texto lê melhor sobre as nuvens */}
+      <div className="mt-14 border-y border-white/10 bg-white/[0.035] backdrop-blur-2xl">
+        <Reveal>
+          <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 md:py-20 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+            <div>
+              <p className="mv-mono flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[var(--mv-brand-light)]">
+                <Palette className="h-4 w-4" /> Visual
+              </p>
+              <h3 className="mt-3 text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+                Depois do login, o Moven veste a camisa da sua academia.
+              </h3>
+              <p className="mt-4 max-w-lg text-lg leading-relaxed">
+                Uma academia verde e branca usa o sistema verde e branco — a equipe no painel e o
+                aluno no portal. Você escolhe a cor; o Moven cuida dos tons.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-2.5">
+                {palettes.map((p) => {
+                  const on = p.name === active.name;
+                  return (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={() => setActive(p)}
+                      aria-pressed={on}
+                      className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold transition-all ${
+                        on
+                          ? "border-transparent bg-white text-[var(--mv-ink)] shadow-lg"
+                          : "mv-glass text-white hover:-translate-y-0.5"
+                      }`}
+                    >
+                      <span className="h-4 w-4 rounded-full ring-2 ring-white" style={{ background: p.color }} />
+                      {p.name}
+                    </button>
+                  );
+                })}
               </div>
-              <span className="flex items-center gap-1.5 rounded-xl bg-[var(--mv-brand)] px-3 py-2 text-xs font-semibold text-white shadow-[0_8px_20px_-8px_var(--mv-brand)] transition-colors duration-500">
-                <Plus className="h-3.5 w-3.5" /> Nova aula
-              </span>
             </div>
-            <div className="mt-4 space-y-2">
-              {classes.map((c) => {
-                const full = c.b >= c.c;
-                return (
-                  <div key={c.h} className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm">
-                    <span className="rounded-lg bg-[var(--mv-brand-100)] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--mv-brand-700)] transition-colors duration-500">
-                      {c.h}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--mv-ink)]">
-                      {c.n}
-                    </span>
-                    <div className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-slate-100 sm:block">
-                      <div
-                        className="h-full rounded-full bg-[var(--mv-brand)] transition-colors duration-500"
-                        style={{ width: `${(c.b / c.c) * 100}%` }}
-                      />
-                    </div>
-                    <span className="w-12 text-right text-[11px] font-semibold tabular-nums text-slate-500">
-                      {full ? "Lotada" : `${c.b}/${c.c}`}
-                    </span>
-                  </div>
-                );
-              })}
+
+            {/* Painel com o celular do aluno por cima, à direita (no celular também, em miniatura); somem num degradê */}
+            <div className="relative pb-10 pr-8 [mask-image:linear-gradient(to_bottom,black_75%,transparent)] sm:pr-14">
+              <AgendaPanelMock style={brand} />
+              <div className="absolute bottom-0 right-0 [zoom:0.65] sm:[zoom:1]">
+                <PortalPhone style={brand} />
+              </div>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
-    </div>
+
+      {/* Funcional: bloco sólido na cor escolhida. Celular: texto, exemplos e o botão no fim */}
+      <Reveal className="mx-auto mt-16 max-w-6xl px-5">
+        <div
+          style={brand}
+          className="relative overflow-hidden rounded-[28px] bg-[var(--mv-brand)] text-white shadow-[0_40px_80px_-30px_var(--mv-brand)] transition-colors duration-500"
+        >
+          <span aria-hidden className="absolute inset-0 bg-[linear-gradient(135deg,transparent_30%,rgb(0_0_0/0.4))]" />
+          <span aria-hidden className="absolute -left-24 -top-32 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
+
+          <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-x-12 lg:p-10">
+            <div className="lg:col-start-1 lg:row-start-1">
+              <p className="mv-mono flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-white/75">
+                <Wrench className="h-4 w-4" /> Funcional
+              </p>
+              <h3 className="mt-3 text-2xl font-extrabold tracking-tight md:text-4xl">
+                Falta algo para a sua academia? A gente ajusta.
+              </h3>
+              <p className="mt-4 text-lg leading-relaxed text-white/80">
+                Se o seu jeito de trabalhar pede uma regra, uma tela ou um aviso diferente, a gente
+                adapta o Moven para a sua necessidade.
+              </p>
+            </div>
+
+            <ul className="grid gap-3 sm:grid-cols-2 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+              {asks.map((a) => (
+                // celular: ícone ao lado do texto (mais baixo); a partir do sm, ícone em cima
+                <li key={a.title} className="flex gap-3.5 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 sm:block sm:p-5">
+                  <span
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white transition-colors duration-500"
+                    style={{ color: active.color }}
+                  >
+                    <a.icon className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="font-bold sm:mt-3">{a.title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-white/75">{a.desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <a
+              href={contactHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3.5 sm:px-5 font-semibold text-[var(--mv-ink)] transition-transform hover:-translate-y-0.5 sm:justify-self-start lg:col-start-1 lg:row-start-2 lg:self-end"
+            >
+              <MessageCircle className="h-5 w-5 transition-colors duration-500" style={{ color: active.color }} />
+              Conversar sobre o meu caso
+              {/* sem a seta no celular o texto cabe numa linha */}
+              <ArrowRight className="hidden h-4 w-4 sm:block" />
+            </a>
+          </div>
+        </div>
+      </Reveal>
+    </>
   );
 }

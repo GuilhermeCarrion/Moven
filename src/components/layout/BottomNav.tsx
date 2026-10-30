@@ -21,7 +21,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { initials, roleLabel, VERSION } from "./Sidebar";
 
-const primary = [
+// exportado para a prévia da landing (painel no celular)
+export const primary = [
   { label: "Início", href: "/dashboard", icon: LayoutDashboard },
   { label: "Alunos", href: "/alunos", icon: Users },
   { label: "Agenda", href: "/agendamentos", icon: Calendar },

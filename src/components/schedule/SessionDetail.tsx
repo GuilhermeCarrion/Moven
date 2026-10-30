@@ -18,16 +18,17 @@ import { initials } from "../layout/Sidebar";
 import { Button } from "../ui/button";
 import { selectCls } from "./ClassSessionForm";
 
-const apptStatus: Record<AppointmentStatus, { label: string; cls: string }> = {
+// exportados para a réplica da landing (Recursos › Presença)
+export const apptStatus: Record<AppointmentStatus, { label: string; cls: string }> = {
   BOOKED: { label: "Agendado", cls: "bg-[var(--mv-brand-100)] text-[var(--mv-brand-700)]" },
   CONFIRMED: { label: "Confirmado", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
   CANCELLED: { label: "Cancelado", cls: "bg-red-500/10 text-red-600 dark:text-red-300" },
   RESCHEDULED: { label: "Remarcado", cls: "bg-slate-500/10 text-slate-600 dark:text-slate-300" },
 };
 
-const pill =
+export const pill =
   "flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold transition-colors";
-const pillOff =
+export const pillOff =
   "border-[var(--mv-line)] text-[var(--mv-text-soft)] hover:bg-[var(--mv-brand-50)] hover:text-[var(--mv-text)]";
 
 export function SessionDetail({ session }: { session: ClassSession }) {

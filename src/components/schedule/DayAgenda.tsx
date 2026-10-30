@@ -23,15 +23,16 @@ export function DayAgenda({
   date,
   sessions,
   isLoading,
+  // shortcut: "agora" é calculado no render (não anda sozinho); atualiza a cada clique/refetch
+  now = new Date(), // fixo na prévia da landing
 }: {
   date: Date;
   sessions: ClassSession[]; // já ordenadas por horário
   isLoading: boolean;
+  now?: Date;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // shortcut: "agora" é calculado no render (não anda sozinho); atualiza a cada clique/refetch
-  const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
   const booked = sessions.reduce((n, s) => n + (s._count?.appointments ?? 0), 0);
   const nextIdx = sessions.findIndex((s) => new Date(s.startAt) > now);

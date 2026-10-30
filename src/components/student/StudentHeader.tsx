@@ -21,6 +21,68 @@ const ddmm = (iso: string) =>
 const R = 26;
 const C = 2 * Math.PI * R;
 
+/** Anel de créditos (arco = livres, trilho = reservadas). Também usado na prévia da landing. */
+export function CreditsRing({
+  free,
+  reserved,
+  balance,
+  warn,
+}: {
+  free: number;
+  reserved: number;
+  balance: number;
+  warn: boolean; // sem crédito livre: âmbar
+}) {
+  return (
+    <div
+      role="img"
+      aria-label={`${free} ${free === 1 ? "crédito livre" : "créditos livres"}${reserved ? `, ${reserved} reservados na agenda fixa` : ""}`}
+      className="flex flex-shrink-0 flex-col items-center"
+    >
+      <span className="relative h-16 w-16">
+        <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
+          <circle
+            cx="32"
+            cy="32"
+            r={R}
+            fill="none"
+            strokeWidth="6"
+            className={
+              warn
+                ? "stroke-amber-500/30"
+                : balance
+                  ? "stroke-[var(--mv-brand)]/35"
+                  : "stroke-[var(--mv-line)]"
+            }
+          />
+          {free > 0 && (
+            <circle
+              cx="32"
+              cy="32"
+              r={R}
+              fill="none"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={`${(free / balance) * C} ${C}`}
+              className="stroke-[var(--mv-brand)]"
+            />
+          )}
+        </svg>
+        <span
+          className={`absolute inset-0 flex items-center justify-center text-2xl font-bold tabular-nums ${
+            warn ? "text-amber-600 dark:text-amber-400" : "text-[var(--mv-text)]"
+          }`}
+        >
+          {free}
+        </span>
+      </span>
+      <span className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--mv-text-soft)]">
+        {free === 1 ? "livre" : "livres"}
+      </span>
+    </div>
+  );
+}
+
 /** Saudação + anel de créditos (arco = livres, trilho = reservadas na agenda fixa). */
 export function StudentHeader() {
   const { student } = useStudentAuth();
@@ -63,52 +125,7 @@ export function StudentHeader() {
           </h1>
         </div>
 
-        <div
-          role="img"
-          aria-label={`${free} ${free === 1 ? "crédito livre" : "créditos livres"}${reserved ? `, ${reserved} reservados na agenda fixa` : ""}`}
-          className="flex flex-shrink-0 flex-col items-center"
-        >
-          <span className="relative h-16 w-16">
-            <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
-              <circle
-                cx="32"
-                cy="32"
-                r={R}
-                fill="none"
-                strokeWidth="6"
-                className={
-                  warn
-                    ? "stroke-amber-500/30"
-                    : balance
-                      ? "stroke-[var(--mv-brand)]/35"
-                      : "stroke-[var(--mv-line)]"
-                }
-              />
-              {free > 0 && (
-                <circle
-                  cx="32"
-                  cy="32"
-                  r={R}
-                  fill="none"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeDasharray={`${(free / balance) * C} ${C}`}
-                  className="stroke-[var(--mv-brand)]"
-                />
-              )}
-            </svg>
-            <span
-              className={`absolute inset-0 flex items-center justify-center text-2xl font-bold tabular-nums ${
-                warn ? "text-amber-600 dark:text-amber-400" : "text-[var(--mv-text)]"
-              }`}
-            >
-              {free}
-            </span>
-          </span>
-          <span className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--mv-text-soft)]">
-            {free === 1 ? "livre" : "livres"}
-          </span>
-        </div>
+        <CreditsRing free={free} reserved={reserved} balance={balance} warn={warn} />
       </div>
 
       {/* legenda do anel: só quando há reserva ou falta crédito */}

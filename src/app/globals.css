@@ -286,13 +286,22 @@ input[type="number"] {
   .mv-marquee:hover {
     animation-play-state: paused;
   }
+  /* CTA final: pontinhos do "digitando…" e a grade de pontos andando */
+  .mv-typing {
+    animation: mv-typing 1.2s ease-in-out infinite;
+  }
+  .mv-drift {
+    animation: mv-drift 4s linear infinite;
+  }
   @media (prefers-reduced-motion: reduce) {
     .mv-reveal {
       opacity: 1;
       transform: none;
       transition: none;
     }
-    .mv-marquee {
+    .mv-marquee,
+    .mv-typing,
+    .mv-drift {
       animation: none;
     }
   }
@@ -301,5 +310,23 @@ input[type="number"] {
 @keyframes mv-marquee {
   to {
     transform: translateX(-50%);
+  }
+}
+@keyframes mv-typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.45;
+    transform: none;
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+/* um passo da grade (18px) para o laço não "pular" */
+@keyframes mv-drift {
+  to {
+    background-position: 18px 18px;
   }
 }
